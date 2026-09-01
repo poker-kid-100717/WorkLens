@@ -1,0 +1,234 @@
+.feed-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.page-header h1 {
+  font-size: var(--text-xl);
+}
+
+.subtitle {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  margin-top: var(--space-1);
+}
+
+.source-status-row {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.source-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: 999px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+.source-chip.error {
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-success);
+}
+.dot-error {
+  background: var(--color-error);
+}
+
+.filters {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  flex-wrap: wrap;
+}
+.filters .input {
+  flex: 1;
+  min-width: 220px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.empty-state {
+  padding: var(--space-12);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+.error-text {
+  color: var(--color-error);
+}
+
+.job-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.job-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  transition: border-color var(--transition);
+}
+.job-card:hover {
+  border-color: var(--color-text-faint);
+}
+
+.job-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.job-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.job-title-row h3 {
+  font-size: var(--text-base);
+}
+.job-title-row a {
+  color: var(--color-text);
+}
+.job-title-row a:hover {
+  color: var(--color-primary);
+}
+
+.job-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  flex-wrap: wrap;
+}
+.company {
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.job-tags {
+  display: flex;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+  margin-top: var(--space-2);
+}
+
+.job-posted {
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+}
+
+.job-actions {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.match-badge {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  cursor: default;
+}
+.match-badge .match-score {
+  font-weight: 700;
+  font-size: var(--text-sm);
+}
+.match-badge .match-label {
+  color: var(--color-text-muted);
+}
+.match-badge.match-high {
+  background: var(--color-primary-highlight);
+  color: var(--color-primary);
+}
+.match-badge.match-medium {
+  background: var(--color-warning-highlight);
+  color: var(--color-warning);
+}
+.match-badge.match-low {
+  background: var(--color-surface-3);
+  color: var(--color-text-muted);
+}
+
+.match-tooltip {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: var(--space-2);
+  width: 240px;
+  padding: var(--space-3);
+  background: var(--color-surface-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  color: var(--color-text);
+  z-index: 5;
+  box-shadow: var(--shadow-md);
+}
+.match-badge:hover .match-tooltip {
+  display: block;
+}
+
+.tracked-badge {
+  background: var(--color-primary-highlight);
+  color: var(--color-primary);
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+.page-info {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}

@@ -1,0 +1,71 @@
+<div class="analytics-page">
+  <h1>Analytics</h1>
+
+  <div *ngIf="loading" class="empty-state">Loading analytics…</div>
+
+  <ng-container *ngIf="!loading && summary">
+    <div class="stat-grid">
+      <div class="stat-card card" data-testid="stat-total-applications">
+        <span class="stat-value">{{ summary.totalApplications }}</span>
+        <span class="stat-label">Total applications</span>
+      </div>
+      <div class="stat-card card" data-testid="stat-active-applications">
+        <span class="stat-value">{{ summary.activeApplications }}</span>
+        <span class="stat-label">Active</span>
+      </div>
+      <div class="stat-card card" data-testid="stat-response-rate">
+        <span class="stat-value">{{ summary.responseRatePercent }}%</span>
+        <span class="stat-label">Response rate</span>
+      </div>
+      <div class="stat-card card" data-testid="stat-interview-rate">
+        <span class="stat-value">{{ summary.interviewRatePercent }}%</span>
+        <span class="stat-label">Interview rate</span>
+      </div>
+      <div class="stat-card card" data-testid="stat-offer-rate">
+        <span class="stat-value">{{ summary.offerRatePercent }}%</span>
+        <span class="stat-label">Offer rate</span>
+      </div>
+      <div class="stat-card card due-stat" data-testid="stat-due-followups">
+        <span class="stat-value">{{ summary.dueFollowUps }}</span>
+        <span class="stat-label">Follow-ups due</span>
+      </div>
+    </div>
+
+    <div class="panel-grid">
+      <div class="panel card">
+        <h3>Pipeline funnel</h3>
+        <div class="bar-row" *ngFor="let stage of summary.funnel">
+          <span class="bar-label">{{ stage.stage }}</span>
+          <div class="bar-track">
+            <div class="bar-fill" [style.width.%]="(stage.count / maxFunnelCount()) * 100"></div>
+          </div>
+          <span class="bar-value">{{ stage.count }}</span>
+        </div>
+      </div>
+
+      <div class="panel card">
+        <h3>Applications per week (last 12 weeks)</h3>
+        <div class="bar-row" *ngFor="let week of summary.applicationsPerWeek">
+          <span class="bar-label">{{ week.weekStart }}</span>
+          <div class="bar-track">
+            <div class="bar-fill accent-blue" [style.width.%]="(week.count / maxWeeklyCount()) * 100"></div>
+          </div>
+          <span class="bar-value">{{ week.count }}</span>
+        </div>
+        <p *ngIf="summary.applicationsPerWeek.length === 0" class="empty-text">No data yet.</p>
+      </div>
+
+      <div class="panel card">
+        <h3>Top companies applied to</h3>
+        <div class="bar-row" *ngFor="let c of summary.topCompanies">
+          <span class="bar-label">{{ c.company }}</span>
+          <div class="bar-track">
+            <div class="bar-fill accent-purple" [style.width.%]="(c.count / maxCompanyCount()) * 100"></div>
+          </div>
+          <span class="bar-value">{{ c.count }}</span>
+        </div>
+        <p *ngIf="summary.topCompanies.length === 0" class="empty-text">No data yet.</p>
+      </div>
+    </div>
+  </ng-container>
+</div>

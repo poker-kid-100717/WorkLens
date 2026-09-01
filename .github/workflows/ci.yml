@@ -1,0 +1,208 @@
+name: CI
+
+# Build and validate every piece of the WorkLens project on every push/PR:
+# - .NET API/Core/Infrastructure solution (build, format check, EF migration
+#   sanity check against a real SQL Server service container)
+# - Angular frontend (build, unit tests headless)
+# - Browser extension (manifest + JS syntax validation)
+# - docker-compose.yml (config validation)
+# - Portfolio site (basic HTML validation)
+#
+# There is no deploy step here on purpose — this is a self-hosted, on-prem app,
+# so shipping to any environment is a manual step you run yourself (see README).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  NODE_VERSION: '20.x'
+
+jobs:
+  backend:
+    name: Backend (.NET)
+    runs-on: ubuntu-latest
+
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: 'Y'
+          MSSQL_SA_PASSWORD: 'Ci_Build_Passw0rd!'
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $MSSQL_SA_PASSWORD -C -Q 'SELECT 1' || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: dotnet restore WorkLens.slnx
+
+      - name: Build (Release)
+        run: dotnet build WorkLens.slnx --configuration Release --no-restore
+
+      - name: Verify code formatting
+        run: dotnet format WorkLens.slnx --verify-no-changes --severity error
+
+      - name: Install dotnet-ef
+        run: dotnet tool install --global dotnet-ef --version 9.0.0
+
+      - name: Apply EF Core migrations against a real SQL Server instance
+        # Exercises every migration end-to-end (schema creation, indexes, FKs) against
+        # the same engine used in production, not just "does it compile".
+        env:
+          ConnectionStrings__WorkLensDb: 'Server=localhost,1433;Database=WorkLensDb_CI;User Id=sa;Password=Ci_Build_Passw0rd!;TrustServerCertificate=True;'
+        run: |
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          dotnet ef database update \
+            --project src/WorkLens.Infrastructure/WorkLens.Infrastructure.csproj \
+            --startup-project src/WorkLens.Api/WorkLens.Api.csproj
+
+      - name: Publish API (smoke check)
+        run: dotnet publish src/WorkLens.Api/WorkLens.Api.csproj --configuration Release --output /tmp/api-publish --no-restore
+
+  frontend:
+    name: Frontend (Angular)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (production)
+        run: npx ng build --configuration production
+
+      - name: Unit tests (headless Chrome)
+        run: npx ng test --no-watch --no-progress --browsers=ChromeHeadless
+
+      - name: Dependency audit (informational only)
+        # Known Angular 18 advisories exist as of this writing (see README's "A note on
+        # dependency security") — fixing them means a breaking major-version bump the
+        # project intentionally leaves as a manual decision. Report findings without
+        # failing the build.
+        run: npm audit --audit-level=critical || true
+
+  extension:
+    name: Browser extension
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: browser-extension
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Validate manifest.json is well-formed
+        run: node -e "JSON.parse(require('fs').readFileSync('manifest.json', 'utf8')); console.log('manifest.json OK')"
+
+      - name: Check every JS file referenced by the manifest exists
+        run: |
+          node -e "
+            const fs = require('fs');
+            const manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
+            const referenced = new Set();
+            if (manifest.background?.service_worker) referenced.add(manifest.background.service_worker);
+            for (const cs of manifest.content_scripts ?? []) for (const f of cs.js ?? []) referenced.add(f);
+            let missing = false;
+            for (const file of referenced) {
+              if (!fs.existsSync(file)) {
+                console.error('Missing file referenced by manifest.json:', file);
+                missing = true;
+              }
+            }
+            if (missing) process.exit(1);
+            console.log('All manifest-referenced files exist:', [...referenced].join(', '));
+          "
+
+      - name: Syntax-check every JS file
+        run: |
+          for f in *.js; do
+            echo "Checking $f"
+            node --check "$f"
+          done
+
+  docker-compose:
+    name: docker-compose validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate docker-compose.yml
+        env:
+          SQL_SA_PASSWORD: 'Ci_Build_Passw0rd!'
+        run: docker compose config --quiet
+
+      - name: Build backend image
+        run: docker compose build api
+
+      - name: Build frontend image
+        run: docker compose build frontend
+
+  portfolio-site:
+    name: Portfolio site (static HTML)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: portfolio-site
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Validate HTML
+        run: npx --yes html-validate index.html
+
+      - name: Check for broken relative asset links
+        run: |
+          node -e "
+            const fs = require('fs');
+            const html = fs.readFileSync('index.html', 'utf8');
+            const refs = [...html.matchAll(/(?:href|src)=\"([^\"]+)\"/g)]
+              .map(m => m[1])
+              .filter(u => !u.startsWith('http') && !u.startsWith('mailto:') && !u.startsWith('tel:') && !u.startsWith('#'));
+            let missing = false;
+            for (const ref of refs) {
+              if (!fs.existsSync(ref)) {
+                console.error('Broken local reference:', ref);
+                missing = true;
+              }
+            }
+            if (missing) process.exit(1);
+            console.log('All local asset references resolve:', refs.join(', '));
+          "

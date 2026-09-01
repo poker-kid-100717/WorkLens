@@ -1,0 +1,67 @@
+<div class="profiles-page">
+  <h1>Search Profiles</h1>
+  <p class="subtitle">
+    Keywords here drive what the background job pulls from RemoteOK, Remotive, Greenhouse, and Dice.
+    Changes apply on the next refresh cycle.
+  </p>
+
+  <div class="form card">
+    <h3>{{ editingId ? 'Edit profile' : 'New profile' }}</h3>
+    <div class="field">
+      <label>Name</label>
+      <input type="text" class="input" [(ngModel)]="form.name" placeholder="e.g. .NET Remote" data-testid="input-profile-name" />
+    </div>
+    <div class="field">
+      <label>Keywords (comma-separated)</label>
+      <input
+        type="text"
+        class="input"
+        [(ngModel)]="keywordsText"
+        placeholder="c#, .net, angular, azure"
+        data-testid="input-profile-keywords"
+      />
+    </div>
+    <div class="field">
+      <label>Location filter (optional)</label>
+      <input type="text" class="input" [(ngModel)]="form.locationFilter" data-testid="input-profile-location" />
+    </div>
+    <label class="checkbox-label">
+      <input type="checkbox" [(ngModel)]="form.remoteOnly" data-testid="checkbox-profile-remote-only" />
+      Remote only
+    </label>
+    <div class="form-actions">
+      <button class="btn btn-primary" (click)="submit()" data-testid="button-submit-profile">
+        {{ editingId ? 'Save changes' : 'Create profile' }}
+      </button>
+      <button class="btn btn-sm" *ngIf="editingId" (click)="resetForm()" data-testid="button-cancel-edit">Cancel</button>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="empty-state">Loading profiles…</div>
+
+  <div class="profile-list" *ngIf="!loading">
+    <div class="profile-card card" *ngFor="let profile of profiles" [attr.data-testid]="'profile-card-' + profile.id">
+      <div class="profile-info">
+        <h4>{{ profile.name }}</h4>
+        <div class="profile-tags">
+          <span class="tag-chip" *ngFor="let k of profile.keywords">{{ k }}</span>
+        </div>
+        <p class="profile-meta" *ngIf="profile.locationFilter">Location: {{ profile.locationFilter }}</p>
+        <p class="profile-meta" *ngIf="profile.remoteOnly">Remote only</p>
+      </div>
+      <div class="profile-actions">
+        <button class="btn btn-sm" (click)="toggleActive(profile)" [attr.data-testid]="'button-toggle-' + profile.id">
+          {{ profile.isActive ? 'Active' : 'Paused' }}
+        </button>
+        <button class="btn btn-sm" (click)="edit(profile)" [attr.data-testid]="'button-edit-' + profile.id">Edit</button>
+        <button class="btn btn-sm delete-btn" (click)="delete(profile)" [attr.data-testid]="'button-delete-' + profile.id">
+          Delete
+        </button>
+      </div>
+    </div>
+
+    <p *ngIf="profiles.length === 0" class="empty-state" data-testid="text-no-profiles">
+      No search profiles yet. Create one above so the background refresh knows what to look for.
+    </p>
+  </div>
+</div>

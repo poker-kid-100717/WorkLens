@@ -1,0 +1,143 @@
+<div class="tracker-page">
+  <div class="page-header">
+    <h1>Application Tracker</h1>
+    <button class="btn btn-primary" (click)="openManualForm()" data-testid="button-add-manual">
+      + Save from URL (LinkedIn, Indeed, etc.)
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="empty-state">Loading applications…</div>
+
+  <div class="board" *ngIf="!loading">
+    <div class="column" *ngFor="let status of statuses" [attr.data-testid]="'column-' + status">
+      <div class="column-header">
+        <span>{{ status }}</span>
+        <span class="badge">{{ byStatus(status).length }}</span>
+      </div>
+
+      <div class="column-body">
+        <div
+          class="app-card card"
+          *ngFor="let app of byStatus(status)"
+          (click)="openDetail(app)"
+          [attr.data-testid]="'app-card-' + app.id"
+        >
+          <div class="app-card-header">
+            <h4>{{ app.title }}</h4>
+            <span *ngIf="app.followUpDue" class="badge due-badge" data-testid="badge-followup-due">Due</span>
+          </div>
+          <p class="app-company">{{ app.company }}</p>
+          <p class="app-location" *ngIf="app.location">{{ app.location }}</p>
+
+          <select
+            class="select status-select"
+            [ngModel]="app.status"
+            (ngModelChange)="changeStatus(app, $event)"
+            (click)="$event.stopPropagation()"
+            [attr.data-testid]="'select-status-' + app.id"
+          >
+            <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
+          </select>
+
+          <button
+            *ngIf="app.followUpDue"
+            class="btn btn-sm dismiss-btn"
+            (click)="dismissFollowUp(app, $event)"
+            [attr.data-testid]="'button-dismiss-followup-' + app.id"
+          >
+            Dismiss reminder
+          </button>
+        </div>
+
+        <p class="column-empty" *ngIf="byStatus(status).length === 0">—</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail / edit drawer -->
+  <div class="drawer-overlay" *ngIf="selectedApp" (click)="closeDetail()">
+    <div class="drawer card" (click)="$event.stopPropagation()" data-testid="drawer-detail">
+      <div class="drawer-header">
+        <div>
+          <h2>{{ selectedApp.title }}</h2>
+          <p class="drawer-company">{{ selectedApp.company }} <span *ngIf="selectedApp.location">· {{ selectedApp.location }}</span></p>
+        </div>
+        <button class="btn btn-sm" (click)="closeDetail()" data-testid="button-close-drawer">Close</button>
+      </div>
+
+      <a *ngIf="selectedApp.url" [href]="selectedApp.url" target="_blank" rel="noopener" class="drawer-link">
+        View original posting →
+      </a>
+
+      <div class="field">
+        <label>Follow-up reminder</label>
+        <input type="datetime-local" class="input" [(ngModel)]="editFollowUpAt" data-testid="input-followup-at" />
+      </div>
+
+      <div class="field">
+        <label>Contact name</label>
+        <input type="text" class="input" [(ngModel)]="editContactName" data-testid="input-contact-name" />
+      </div>
+
+      <div class="field">
+        <label>Contact email</label>
+        <input type="email" class="input" [(ngModel)]="editContactEmail" data-testid="input-contact-email" />
+      </div>
+
+      <div class="field">
+        <label>Notes</label>
+        <textarea class="textarea" rows="5" [(ngModel)]="editNotes" data-testid="textarea-notes"></textarea>
+      </div>
+
+      <div class="drawer-actions">
+        <button class="btn btn-primary" (click)="saveDetail()" data-testid="button-save-detail">Save changes</button>
+        <button class="btn btn-sm delete-btn" (click)="deleteApplication(selectedApp)" data-testid="button-delete-application">
+          Remove from tracker
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Save-from-URL modal -->
+  <div class="drawer-overlay" *ngIf="showManualForm" (click)="closeManualForm()">
+    <div class="drawer card" (click)="$event.stopPropagation()" data-testid="modal-manual-entry">
+      <div class="drawer-header">
+        <h2>Save a job from URL</h2>
+        <button class="btn btn-sm" (click)="closeManualForm()" data-testid="button-close-manual">Close</button>
+      </div>
+      <p class="drawer-hint">
+        For jobs found on LinkedIn, Indeed, or anywhere else without a live feed — paste the details here and
+        it'll track exactly like anything saved from the feed.
+      </p>
+
+      <div class="field">
+        <label>Title *</label>
+        <input type="text" class="input" [(ngModel)]="manualForm.title" data-testid="input-manual-title" />
+      </div>
+      <div class="field">
+        <label>Company *</label>
+        <input type="text" class="input" [(ngModel)]="manualForm.company" data-testid="input-manual-company" />
+      </div>
+      <div class="field">
+        <label>Location</label>
+        <input type="text" class="input" [(ngModel)]="manualForm.location" data-testid="input-manual-location" />
+      </div>
+      <div class="field">
+        <label>Job URL</label>
+        <input type="url" class="input" placeholder="https://www.linkedin.com/jobs/view/…" [(ngModel)]="manualForm.url" data-testid="input-manual-url" />
+      </div>
+      <div class="field">
+        <label>Notes</label>
+        <textarea class="textarea" rows="3" [(ngModel)]="manualForm.notes" data-testid="textarea-manual-notes"></textarea>
+      </div>
+
+      <p class="error-text" *ngIf="manualError">{{ manualError }}</p>
+
+      <div class="drawer-actions">
+        <button class="btn btn-primary" (click)="submitManualForm()" [disabled]="manualSaving" data-testid="button-submit-manual">
+          {{ manualSaving ? 'Saving…' : 'Save' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

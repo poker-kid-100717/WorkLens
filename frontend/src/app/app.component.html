@@ -1,0 +1,50 @@
+<div class="shell">
+  <header class="topbar">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-label="WorkLens logo">
+        <rect x="2" y="6" width="20" height="14" rx="2" stroke="currentColor" stroke-width="1.8" />
+        <path d="M8 6V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="1.8" />
+        <path d="M2 12h6l1.2 2.4h5.6L16 12h6" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+      </svg>
+      <span>WorkLens</span>
+    </div>
+
+    <nav class="main-nav" aria-label="Main navigation">
+      <a routerLink="/feed" routerLinkActive="active" data-testid="link-feed">Feed</a>
+      <a routerLink="/tracker" routerLinkActive="active" data-testid="link-tracker">Tracker</a>
+      <a routerLink="/analytics" routerLinkActive="active" data-testid="link-analytics">Analytics</a>
+      <a routerLink="/search-profiles" routerLinkActive="active" data-testid="link-search-profiles">Search Profiles</a>
+      <a routerLink="/resume" routerLinkActive="active" data-testid="link-resume">Resume</a>
+    </nav>
+
+    <div class="topbar-actions">
+      <button
+        class="btn btn-sm reminder-btn"
+        [class.has-due]="dueFollowUps.length > 0"
+        (click)="toggleReminders()"
+        data-testid="button-toggle-reminders"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </svg>
+        <span *ngIf="dueFollowUps.length > 0" data-testid="text-due-count">{{ dueFollowUps.length }}</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="reminder-panel" *ngIf="showReminders" data-testid="panel-reminders">
+    <h3>Follow-ups due</h3>
+    <p *ngIf="dueFollowUps.length === 0" class="empty-text">Nothing due right now.</p>
+    <ul *ngIf="dueFollowUps.length > 0">
+      <li *ngFor="let app of dueFollowUps" [attr.data-testid]="'reminder-item-' + app.id">
+        <span class="reminder-title">{{ app.title }}</span>
+        <span class="reminder-company">{{ app.company }}</span>
+      </li>
+    </ul>
+  </div>
+
+  <main class="content">
+    <router-outlet />
+  </main>
+</div>

@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/WorkLens.Api/WorkLens.Api.csproj" />
+    <Project Path="src/WorkLens.Core/WorkLens.Core.csproj" />
+    <Project Path="src/WorkLens.Infrastructure/WorkLens.Infrastructure.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,52 @@
+<div class="resume-page">
+  <h1>Resume &amp; Job Matching</h1>
+  <p class="subtitle">
+    Upload your resume once. The most recently uploaded one becomes active and is used to score how well each
+    feed listing fits — see the match badge on job cards in the Feed tab. Text is extracted from PDFs entirely
+    in your browser before being sent to the server.
+  </p>
+
+  <div class="upload-card card">
+    <div class="field">
+      <label>Resume name</label>
+      <input type="text" class="input" [(ngModel)]="name" placeholder="e.g. Josh Davis — Full Stack" data-testid="input-resume-name" />
+    </div>
+
+    <div class="field">
+      <label>Upload a file (PDF or .txt)</label>
+      <input type="file" accept=".pdf,.txt" (change)="onFileSelected($event)" data-testid="input-resume-file" />
+      <p class="hint" *ngIf="extracting">Extracting text…</p>
+    </div>
+
+    <div class="field">
+      <label>Or paste resume text directly</label>
+      <textarea
+        class="textarea"
+        rows="10"
+        [(ngModel)]="pastedText"
+        placeholder="Paste your resume text here…"
+        data-testid="textarea-resume-text"
+      ></textarea>
+    </div>
+
+    <p class="error-text" *ngIf="error">{{ error }}</p>
+    <p class="success-text" *ngIf="success">{{ success }}</p>
+
+    <button class="btn btn-primary" (click)="submit()" [disabled]="uploading || extracting" data-testid="button-save-resume">
+      {{ uploading ? 'Saving…' : 'Save resume' }}
+    </button>
+  </div>
+
+  <div class="history">
+    <h3>Upload history</h3>
+    <div *ngIf="loading" class="empty-state">Loading…</div>
+    <div class="resume-list" *ngIf="!loading">
+      <div class="resume-row card" *ngFor="let r of resumes" [attr.data-testid]="'resume-row-' + r.id">
+        <span class="resume-name">{{ r.name }}</span>
+        <span class="badge" *ngIf="r.isActive">Active</span>
+        <span class="resume-meta">{{ r.characterCount }} chars · uploaded {{ r.uploadedAt | date: 'short' }}</span>
+      </div>
+      <p *ngIf="resumes.length === 0" class="empty-state" data-testid="text-no-resumes">No resumes uploaded yet.</p>
+    </div>
+  </div>
+</div>

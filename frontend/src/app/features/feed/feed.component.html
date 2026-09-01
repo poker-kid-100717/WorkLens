@@ -1,0 +1,128 @@
+<div class="feed-page">
+  <div class="page-header">
+    <div>
+      <h1>Job Feed</h1>
+      <p class="subtitle" *ngIf="feed" data-testid="text-last-refreshed">
+        Last refreshed {{ secondsAgo(feed.lastRefreshedAt) }} · auto-refreshing every 7s
+      </p>
+    </div>
+    <div class="header-actions">
+      <button
+        *ngIf="hasResume"
+        class="btn btn-sm"
+        (click)="scoreVisibleJobs()"
+        [disabled]="matching"
+        data-testid="button-score-matches"
+      >
+        {{ matching ? 'Scoring…' : 'Score matches vs. resume' }}
+      </button>
+      <a *ngIf="!hasResume" routerLink="/resume" class="btn btn-sm" data-testid="link-upload-resume">Upload resume to enable match scoring</a>
+      <button class="btn btn-primary" (click)="refreshNow()" [disabled]="refreshing" data-testid="button-refresh-now">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M23 4v6h-6M1 20v-6h6" />
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+        </svg>
+        {{ refreshing ? 'Refreshing…' : 'Refresh now' }}
+      </button>
+    </div>
+  </div>
+
+  <div class="source-status-row" *ngIf="feed?.sourceStatuses?.length" data-testid="row-source-statuses">
+    <div
+      class="source-chip"
+      *ngFor="let s of feed!.sourceStatuses"
+      [class.error]="!s.lastFetchSucceeded"
+      [attr.data-testid]="'chip-source-' + s.source"
+    >
+      <span class="dot" [class.dot-error]="!s.lastFetchSucceeded"></span>
+      {{ s.source }} · {{ s.listingCount }}
+    </div>
+  </div>
+
+  <div class="filters card">
+    <input
+      class="input"
+      type="text"
+      placeholder="Search title, company, tags…"
+      [(ngModel)]="search"
+      (keyup.enter)="applyFilters()"
+      data-testid="input-search"
+    />
+    <label class="checkbox-label">
+      <input type="checkbox" [(ngModel)]="remoteOnly" (change)="applyFilters()" data-testid="checkbox-remote-only" />
+      Remote only
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" [(ngModel)]="hideTracked" (change)="applyFilters()" data-testid="checkbox-hide-tracked" />
+      Hide tracked
+    </label>
+    <button class="btn btn-sm" (click)="applyFilters()" data-testid="button-apply-filters">Apply</button>
+  </div>
+
+  <div *ngIf="loading" class="empty-state">Loading feed…</div>
+  <div *ngIf="error" class="empty-state error-text">{{ error }}</div>
+
+  <div *ngIf="!loading && feed && feed.items.length === 0" class="empty-state" data-testid="text-empty-feed">
+    No listings match your filters yet. Try widening your search, or configure keywords under
+    <a routerLink="/search-profiles">Search Profiles</a> so the background refresh has something to look for.
+  </div>
+
+  <div class="job-list" *ngIf="feed && feed.items.length > 0">
+    <article class="job-card card" *ngFor="let job of feed.items; trackBy: trackByJobId" [attr.data-testid]="'card-job-' + job.id">
+      <div class="job-main">
+        <div class="job-title-row">
+          <h3>
+            <a [href]="job.url" target="_blank" rel="noopener" [attr.data-testid]="'link-job-' + job.id">{{ job.title }}</a>
+          </h3>
+          <span class="badge">{{ job.source }}</span>
+        </div>
+        <div class="job-meta">
+          <span class="company">{{ job.company }}</span>
+          <span *ngIf="job.location">· {{ job.location }}</span>
+          <span *ngIf="job.isRemote" class="badge">Remote</span>
+          <span *ngIf="job.salaryMin || job.salaryMax" class="badge">
+            {{ job.salaryMin }}{{ job.salaryMin && job.salaryMax ? '–' : '' }}{{ job.salaryMax }}
+            {{ job.salaryCurrency }}
+          </span>
+        </div>
+        <div class="job-tags" *ngIf="job.tags.length > 0">
+          <span class="tag-chip" *ngFor="let tag of job.tags.slice(0, 6)">{{ tag }}</span>
+        </div>
+        <div class="job-posted">Posted {{ secondsAgo(job.postedAt) }}</div>
+      </div>
+
+      <div class="job-actions">
+        <div class="match-badge" *ngIf="matchFor(job.id) as match" [ngClass]="matchClass(match.matchScore)" [attr.data-testid]="'match-badge-' + job.id">
+          <span class="match-score">{{ match.matchScore }}%</span>
+          <span class="match-label">match</span>
+          <div class="match-tooltip" *ngIf="match.summary">{{ match.summary }}</div>
+        </div>
+        <button
+          *ngIf="!job.applicationId"
+          class="btn btn-primary btn-sm"
+          (click)="saveJob(job)"
+          [disabled]="savingIds.has(job.id)"
+          [attr.data-testid]="'button-save-' + job.id"
+        >
+          {{ savingIds.has(job.id) ? 'Saving…' : 'Save' }}
+        </button>
+        <span *ngIf="job.applicationId" class="badge tracked-badge" [attr.data-testid]="'badge-tracked-' + job.id">
+          Tracked · {{ job.applicationStatus }}
+        </span>
+      </div>
+    </article>
+  </div>
+
+  <div class="pagination" *ngIf="feed && feed.totalCount > pageSize">
+    <button class="btn btn-sm" (click)="changePage(-1)" [disabled]="page <= 1" data-testid="button-prev-page">Prev</button>
+    <span class="page-info">Page {{ page }} of {{ Math.max(1, Math.ceil(feed.totalCount / pageSize)) }}</span>
+    <button
+      class="btn btn-sm"
+      (click)="changePage(1)"
+      [disabled]="page >= Math.ceil(feed.totalCount / pageSize)"
+      data-testid="button-next-page"
+    >
+      Next
+    </button>
+  </div>
+</div>
