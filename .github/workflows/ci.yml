@@ -155,13 +155,13 @@ jobs:
   docker-compose:
     name: docker-compose validation
     runs-on: ubuntu-latest
+    env:
+      SQL_SA_PASSWORD: 'Ci_Build_Passw0rd!'
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Validate docker-compose.yml
-        env:
-          SQL_SA_PASSWORD: 'Ci_Build_Passw0rd!'
         run: docker compose config --quiet
 
       - name: Build backend image
