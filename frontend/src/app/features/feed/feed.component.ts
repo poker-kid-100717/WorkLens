@@ -8,13 +8,6 @@ import { ApplicationsService } from '../../core/services/applications.service';
 import { ResumeService } from '../../core/services/resume.service';
 import { FeedResponse, JobListing, JobMatch } from '../../core/models/models';
 
-/**
- * Live job feed. Polls the backend's own cache every POLL_MS (5-10s, per the product
- * requirement) — this never calls RemoteOK/Remotive/Greenhouse/Dice directly. The
- * background service on the API polls those upstream sources on its own, much slower
- * schedule (default 120s, configurable) and stores results in SQL Server; this screen
- * just reads whatever's already there, so a fast UI refresh costs nothing upstream.
- */
 @Component({
   selector: 'app-feed',
   standalone: true,
@@ -41,7 +34,7 @@ export class FeedComponent implements OnInit, OnDestroy {
   matches = new Map<number, JobMatch>();
   matching = false;
 
-  private readonly POLL_MS = 7000; // within the requested 5-10s window
+  private readonly POLL_MS = 7000;
   private destroy$ = new Subject<void>();
   private poll$?: Subscription;
 
@@ -52,10 +45,16 @@ export class FeedComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.startPolling();
     this.resumeService.hasActiveResume().subscribe({
-      next: (has) => (this.hasResume = has),
-      error: () => (this.hasResume = false)
+      next: (has) => {
+        this.hasResume = has;
+        if (has) this.remoteOnly = true;
+        this.startPolling();
+      },
+      error: () => {
+        this.hasResume = false;
+        this.startPolling();
+      }
     });
   }
 
@@ -85,6 +84,7 @@ export class FeedComponent implements OnInit, OnDestroy {
           this.feed = response;
           this.loading = false;
           this.error = null;
+          if (this.hasResume) queueMicrotask(() => this.scoreVisibleJobs());
           return [response];
         })
       );
@@ -129,7 +129,11 @@ export class FeedComponent implements OnInit, OnDestroy {
   refreshNow(): void {
     this.refreshing = true;
     this.feedService.refreshNow().subscribe({
-      next: () => (this.refreshing = false),
+      next: () => {
+        this.refreshing = false;
+        this.matches.clear();
+        this.startPolling();
+      },
       error: () => (this.refreshing = false)
     });
   }
