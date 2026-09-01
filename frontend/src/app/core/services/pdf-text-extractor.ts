@@ -1,21 +1,13 @@
 import { Injectable } from '@angular/core';
 
-/**
- * Extracts plain text from a PDF entirely in the browser using Mozilla's official
- * pdfjs-dist package. Keeping this client-side means the backend never needs a
- * PDF-parsing dependency (avoiding a whole class of server-side parsing
- * vulnerabilities) — only extracted plain text is ever sent to the API.
- */
 @Injectable({ providedIn: 'root' })
 export class PdfTextExtractor {
   async extractText(file: File): Promise<string> {
     const pdfjsLib = await import('pdfjs-dist');
-    // Point the worker at the same version's prebuilt worker script from the package
-    // itself (bundled by Angular's build, not a remote CDN) so extraction works offline.
-    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-      'pdfjs-dist/build/pdf.worker.mjs',
-      import.meta.url
-    ).toString();
+
+    // Serve the worker as a real static module so nginx returns JavaScript instead of
+    // falling back to index.html (which causes the strict MIME-type failure).
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/assets/pdfjs/pdf.worker.min.mjs';
 
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
