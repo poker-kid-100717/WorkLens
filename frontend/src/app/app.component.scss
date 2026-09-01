@@ -7,10 +7,13 @@
 .topbar {
   display: flex;
   align-items: center;
-  gap: var(--space-8);
-  padding: var(--space-3) var(--space-6);
-  background: var(--color-surface);
+  gap: var(--space-6);
+  min-height: 64px;
+  padding: 0 var(--space-6);
+  background: rgba(255, 255, 255, 0.94);
   border-bottom: 1px solid var(--color-border);
+  box-shadow: 0 1px 0 rgba(16, 24, 40, 0.02);
+  backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -19,34 +22,42 @@
 .brand {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  font-weight: 600;
-  font-size: var(--text-base);
+  gap: 10px;
+  min-width: max-content;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--color-text);
+}
+
+.brand svg {
   color: var(--color-primary);
 }
 
 .main-nav {
   display: flex;
-  gap: var(--space-1);
+  align-items: center;
+  gap: 2px;
   flex: 1;
 }
 
 .main-nav a {
-  padding: var(--space-2) var(--space-3);
+  padding: 8px 11px;
   border-radius: var(--radius-sm);
   color: var(--color-text-muted);
   font-size: var(--text-sm);
-  font-weight: 500;
-  transition: all var(--transition);
+  font-weight: 600;
+  transition: background var(--transition), color var(--transition);
 }
+
 .main-nav a:hover {
   color: var(--color-text);
   text-decoration: none;
   background: var(--color-surface-2);
 }
+
 .main-nav a.active {
-  color: var(--color-text);
-  background: var(--color-surface-2);
+  color: var(--color-primary);
+  background: var(--color-primary-highlight);
 }
 
 .topbar-actions {
@@ -56,63 +67,73 @@
 
 .reminder-btn {
   position: relative;
-  padding: var(--space-2);
+  padding: 0;
+  width: 36px;
 }
+
 .reminder-btn span {
   position: absolute;
-  top: -4px;
-  right: -4px;
+  top: -5px;
+  right: -5px;
   background: var(--color-error);
   color: white;
+  border: 2px solid white;
   border-radius: 999px;
-  font-size: 10px;
-  min-width: 16px;
-  height: 16px;
+  font-size: 9px;
+  min-width: 17px;
+  height: 17px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 4px;
+  padding: 0 3px;
 }
+
 .reminder-btn.has-due {
-  border-color: var(--color-error);
+  border-color: #e8b7c0;
 }
 
 .reminder-panel {
-  background: var(--color-surface-2);
+  background: #fff;
   border-bottom: 1px solid var(--color-border);
   padding: var(--space-4) var(--space-6);
 }
+
 .reminder-panel h3 {
   font-size: var(--text-sm);
   margin-bottom: var(--space-2);
-  color: var(--color-text-muted);
+  color: var(--color-text);
 }
+
 .reminder-panel ul {
   list-style: none;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
 }
+
 .reminder-panel li {
   display: flex;
   gap: var(--space-3);
   font-size: var(--text-sm);
 }
+
 .reminder-title {
-  font-weight: 500;
+  font-weight: 600;
 }
-.reminder-company {
+
+.reminder-company,
+.empty-text {
   color: var(--color-text-muted);
 }
+
 .empty-text {
-  color: var(--color-text-faint);
   font-size: var(--text-sm);
 }
 
 .content {
   flex: 1;
-  padding: var(--space-6);
-  max-width: 1400px;
+  padding: 28px var(--space-6) var(--space-10);
+  max-width: 1360px;
   width: 100%;
   margin: 0 auto;
 }
@@ -121,13 +142,17 @@
   .topbar {
     flex-wrap: wrap;
     gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
   }
+
   .main-nav {
     order: 3;
     width: 100%;
     overflow-x: auto;
+    padding-bottom: 2px;
   }
+
   .content {
-    padding: var(--space-4);
+    padding: var(--space-5) var(--space-4) var(--space-8);
   }
 }

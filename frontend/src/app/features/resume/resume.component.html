@@ -1,52 +1,105 @@
 <div class="resume-page">
-  <h1>Resume &amp; Job Matching</h1>
-  <p class="subtitle">
-    Upload your resume once. The most recently uploaded one becomes active and is used to score how well each
-    feed listing fits — see the match badge on job cards in the Feed tab. Text is extracted from PDFs entirely
-    in your browser before being sent to the server.
-  </p>
-
-  <div class="upload-card card">
-    <div class="field">
-      <label>Resume name</label>
-      <input type="text" class="input" [(ngModel)]="name" placeholder="e.g. Josh Davis — Full Stack" data-testid="input-resume-name" />
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">Profile setup</span>
+      <h1>Resume matching</h1>
+      <p class="subtitle">Add the resume you want WorkLens to use when ranking opportunities.</p>
     </div>
-
-    <div class="field">
-      <label>Upload a file (PDF or .txt)</label>
-      <input type="file" accept=".pdf,.txt" (change)="onFileSelected($event)" data-testid="input-resume-file" />
-      <p class="hint" *ngIf="extracting">Extracting text…</p>
+    <div class="status-pill" *ngIf="resumes.length > 0">
+      <span class="status-dot"></span>
+      Resume active
     </div>
-
-    <div class="field">
-      <label>Or paste resume text directly</label>
-      <textarea
-        class="textarea"
-        rows="10"
-        [(ngModel)]="pastedText"
-        placeholder="Paste your resume text here…"
-        data-testid="textarea-resume-text"
-      ></textarea>
-    </div>
-
-    <p class="error-text" *ngIf="error">{{ error }}</p>
-    <p class="success-text" *ngIf="success">{{ success }}</p>
-
-    <button class="btn btn-primary" (click)="submit()" [disabled]="uploading || extracting" data-testid="button-save-resume">
-      {{ uploading ? 'Saving…' : 'Save resume' }}
-    </button>
   </div>
 
-  <div class="history">
-    <h3>Upload history</h3>
-    <div *ngIf="loading" class="empty-state">Loading…</div>
-    <div class="resume-list" *ngIf="!loading">
-      <div class="resume-row card" *ngFor="let r of resumes" [attr.data-testid]="'resume-row-' + r.id">
-        <span class="resume-name">{{ r.name }}</span>
-        <span class="badge" *ngIf="r.isActive">Active</span>
-        <span class="resume-meta">{{ r.characterCount }} chars · uploaded {{ r.uploadedAt | date: 'short' }}</span>
+  <div class="resume-grid">
+    <section class="upload-card card">
+      <div class="section-heading">
+        <div>
+          <h2>Add your resume</h2>
+          <p>PDF and TXT supported. PDF text is extracted in your browser.</p>
+        </div>
       </div>
-      <p *ngIf="resumes.length === 0" class="empty-state" data-testid="text-no-resumes">No resumes uploaded yet.</p>
-    </div>
+
+      <div class="field">
+        <label for="resume-name">Resume name</label>
+        <input
+          id="resume-name"
+          type="text"
+          class="input"
+          [(ngModel)]="name"
+          placeholder="Senior Full Stack Engineer"
+          data-testid="input-resume-name"
+        />
+      </div>
+
+      <div class="field">
+        <label>Resume file</label>
+        <label class="file-drop" [class.is-loading]="extracting">
+          <input type="file" accept=".pdf,.txt" (change)="onFileSelected($event)" data-testid="input-resume-file" />
+          <span class="file-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M12 16V4" />
+              <path d="m7 9 5-5 5 5" />
+              <path d="M5 20h14" />
+            </svg>
+          </span>
+          <span class="file-copy">
+            <strong>{{ extracting ? 'Reading your resume…' : 'Choose a PDF or TXT file' }}</strong>
+            <small>{{ extracting ? 'This usually takes a few seconds.' : 'Click to browse from your computer' }}</small>
+          </span>
+        </label>
+      </div>
+
+      <div class="divider"><span>or paste text</span></div>
+
+      <div class="field">
+        <label for="resume-text">Resume text</label>
+        <textarea
+          id="resume-text"
+          class="textarea resume-textarea"
+          rows="10"
+          [(ngModel)]="pastedText"
+          placeholder="Paste your resume text here…"
+          data-testid="textarea-resume-text"
+        ></textarea>
+        <span class="text-meta" *ngIf="pastedText">{{ pastedText.length | number }} characters ready</span>
+      </div>
+
+      <div class="message error-message" *ngIf="error">{{ error }}</div>
+      <div class="message success-message" *ngIf="success">{{ success }}</div>
+
+      <div class="card-actions">
+        <span class="privacy-note">Only extracted text is saved for matching.</span>
+        <button class="btn btn-primary" (click)="submit()" [disabled]="uploading || extracting" data-testid="button-save-resume">
+          {{ uploading ? 'Saving…' : 'Save & use for matching' }}
+        </button>
+      </div>
+    </section>
+
+    <aside class="side-panel">
+      <div class="tip-card card">
+        <span class="tip-label">Better matches</span>
+        <h3>Use the resume you actually send.</h3>
+        <p>WorkLens compares job descriptions against the active resume, so keep this version aligned with the roles you are targeting.</p>
+      </div>
+
+      <div class="history card">
+        <div class="history-heading">
+          <h3>Resume history</h3>
+          <span>{{ resumes.length }}</span>
+        </div>
+        <div *ngIf="loading" class="empty-state">Loading resumes…</div>
+        <div class="resume-list" *ngIf="!loading">
+          <div class="resume-row" *ngFor="let r of resumes" [attr.data-testid]="'resume-row-' + r.id">
+            <div class="resume-row-main">
+              <span class="resume-name">{{ r.name }}</span>
+              <span class="resume-meta">{{ r.characterCount | number }} chars · {{ r.uploadedAt | date: 'MMM d, y' }}</span>
+            </div>
+            <span class="badge" *ngIf="r.isActive">Active</span>
+          </div>
+          <p *ngIf="resumes.length === 0" class="empty-state" data-testid="text-no-resumes">No resumes saved yet.</p>
+        </div>
+      </div>
+    </aside>
   </div>
 </div>
