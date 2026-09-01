@@ -14,6 +14,7 @@ public class JobFeedAggregatorService
     private readonly IEnumerable<IJobFeedProvider> _providers;
     private readonly IJobListingRepository _listingRepo;
     private readonly ISearchProfileRepository _profileRepo;
+    private readonly IResumeRepository _resumeRepo;
     private readonly FeedRefreshState _state;
     private readonly ILogger<JobFeedAggregatorService> _logger;
 
@@ -21,12 +22,14 @@ public class JobFeedAggregatorService
         IEnumerable<IJobFeedProvider> providers,
         IJobListingRepository listingRepo,
         ISearchProfileRepository profileRepo,
+        IResumeRepository resumeRepo,
         FeedRefreshState state,
         ILogger<JobFeedAggregatorService> logger)
     {
         _providers = providers;
         _listingRepo = listingRepo;
         _profileRepo = profileRepo;
+        _resumeRepo = resumeRepo;
         _state = state;
         _logger = logger;
     }
@@ -35,8 +38,6 @@ public class JobFeedAggregatorService
     {
         var keywords = await ResolveKeywordsAsync(ct);
 
-        // Fetch from independent HTTP providers in parallel. No EF Core work happens
-        // in these tasks, so the scoped DbContext is not shared concurrently.
         var fetchTasks = _providers.Select(async provider =>
         {
             try
@@ -52,8 +53,6 @@ public class JobFeedAggregatorService
 
         var results = await Task.WhenAll(fetchTasks);
 
-        // A scoped DbContext is not thread-safe. Apply each provider result one at a
-        // time, then commit the complete refresh as one unit of work.
         foreach (var result in results)
         {
             if (result.Error is not null)
@@ -104,7 +103,54 @@ public class JobFeedAggregatorService
             }
         }
 
-        return keywords.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var activeResume = await _resumeRepo.GetActiveAsync(ct);
+        if (activeResume is not null)
+            keywords.AddRange(ExtractResumeKeywords(activeResume.RawText));
+
+        return keywords
+            .Where(k => !string.IsNullOrWhiteSpace(k))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(16)
+            .ToList();
+    }
+
+    private static IEnumerable<string> ExtractResumeKeywords(string rawText)
+    {
+        var text = rawText.ToLowerInvariant();
+        var keywords = new List<string>();
+
+        static void Add(List<string> target, params string[] values)
+        {
+            foreach (var value in values)
+            {
+                if (!target.Contains(value, StringComparer.OrdinalIgnoreCase))
+                    target.Add(value);
+            }
+        }
+
+        if (text.Contains("software engineer"))
+            Add(keywords, "software engineer", "software developer");
+        if (text.Contains("full stack") || text.Contains("full-stack"))
+            Add(keywords, "full stack", "full stack developer", "full stack engineer");
+        if (text.Contains(".net") || text.Contains("dotnet"))
+            Add(keywords, ".NET", ".NET developer", ".NET engineer");
+        if (text.Contains("c#"))
+            Add(keywords, "C#", "C# developer");
+        if (text.Contains("asp.net"))
+            Add(keywords, "ASP.NET");
+        if (text.Contains("angular"))
+            Add(keywords, "Angular");
+        if (text.Contains("backend") || text.Contains("back-end"))
+            Add(keywords, "backend developer", "backend engineer");
+        if (text.Contains("architect"))
+            Add(keywords, "software architect", "solution architect", "application architect");
+        if (text.Contains("lead engineer") || text.Contains("technical lead") || text.Contains("tech lead"))
+            Add(keywords, "lead software engineer", "lead developer");
+
+        if (keywords.Count == 0)
+            Add(keywords, "software engineer", "software developer");
+
+        return keywords;
     }
 
     private sealed record ProviderFetchResult(
