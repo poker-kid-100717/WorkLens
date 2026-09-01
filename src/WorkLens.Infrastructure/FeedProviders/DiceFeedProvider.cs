@@ -13,9 +13,6 @@ namespace WorkLens.Infrastructure.FeedProviders;
 /// no login. It's a Streamable-HTTP MCP endpoint (JSON-RPC over SSE-framed responses),
 /// not a plain REST API, so this provider speaks minimal JSON-RPC directly over HTTP
 /// rather than pulling in a full MCP client library.
-///
-/// One search_jobs call is issued per keyword (the tool requires exactly one `keyword`
-/// string, not an OR'd list), and results across keywords are merged/de-duplicated by guid.
 /// </summary>
 public class DiceFeedProvider : IJobFeedProvider
 {
@@ -41,9 +38,6 @@ public class DiceFeedProvider : IJobFeedProvider
 
         var now = DateTimeOffset.UtcNow;
         var seen = new Dictionary<string, JobListing>();
-
-        // Dice's search_jobs tool takes a single free-text keyword string, not a list —
-        // combine keywords into one query so the search engine can match across all of them.
         var combinedKeyword = string.Join(' ', keywords.Take(6));
 
         try
@@ -100,9 +94,7 @@ public class DiceFeedProvider : IJobFeedProvider
         var root = doc.RootElement;
 
         if (root.TryGetProperty("error", out var error))
-        {
             throw new InvalidOperationException($"Dice MCP error: {error}");
-        }
 
         var contentText = root
             .GetProperty("result")
@@ -114,15 +106,11 @@ public class DiceFeedProvider : IJobFeedProvider
         return searchResult?.Data ?? new List<DiceJob>();
     }
 
-    /// <summary>
-    /// The MCP endpoint returns "event: message\ndata: {...}" SSE framing even for a
-    /// single-shot POST response. Pull the JSON payload out of the "data:" line(s).
-    /// </summary>
     private static string ExtractJsonPayload(string raw)
     {
         var lines = raw.Split('\n');
         var dataLine = lines.FirstOrDefault(l => l.StartsWith("data:", StringComparison.Ordinal));
-        if (dataLine is null) return raw; // Not SSE-framed — assume plain JSON.
+        if (dataLine is null) return raw;
         return dataLine["data:".Length..].Trim();
     }
 
@@ -142,13 +130,22 @@ public class DiceFeedProvider : IJobFeedProvider
             job.EmploymentType ?? string.Empty,
             job.EmployerType ?? string.Empty
         }.Where(s => !string.IsNullOrWhiteSpace(s))),
-        Url = job.DetailsPageUrl ?? string.Empty,
+        // Dice's MCP sometimes returns details-page URLs that respond with 403 outside
+        // its normal browser flow. Link to a Dice search for the exact role/company instead,
+        // which keeps the result usable without relying on the blocked deep link.
+        Url = BuildBrowserSafeSearchUrl(job),
         DescriptionHtml = job.Summary,
         CompanyLogoUrl = job.CompanyLogoUrl,
         PostedAt = job.PostedDate ?? now,
         FetchedAt = now,
         IsActive = true
     };
+
+    private static string BuildBrowserSafeSearchUrl(DiceJob job)
+    {
+        var query = string.Join(' ', new[] { job.Title, job.CompanyName }.Where(s => !string.IsNullOrWhiteSpace(s)));
+        return $"https://www.dice.com/jobs?q={Uri.EscapeDataString(query)}";
+    }
 
     private static readonly JsonSerializerOptions JsonOpts = new()
     {

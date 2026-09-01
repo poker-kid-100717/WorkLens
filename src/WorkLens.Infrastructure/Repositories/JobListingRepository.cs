@@ -37,7 +37,10 @@ public class JobListingRepository : IJobListingRepository
         var totalCount = await query.CountAsync(ct);
 
         var items = await query
-            .OrderByDescending(j => j.PostedAt)
+            .OrderByDescending(j => j.TagsJson.Contains("$160k+ watch"))
+            .ThenByDescending(j => j.TagsJson.Contains("$140k+ watch"))
+            .ThenByDescending(j => j.TagsJson.Contains("Career Watch"))
+            .ThenByDescending(j => j.PostedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(ct);

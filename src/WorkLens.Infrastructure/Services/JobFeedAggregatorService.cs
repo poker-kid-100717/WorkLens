@@ -11,6 +11,23 @@ namespace WorkLens.Infrastructure.Services;
 /// </summary>
 public class JobFeedAggregatorService
 {
+    private static readonly string[] CareerWatchKeywords =
+    {
+        "software engineer",
+        "senior software engineer",
+        "staff software engineer",
+        "principal software engineer",
+        "lead software engineer",
+        ".NET",
+        "C#",
+        "ASP.NET Core",
+        "full stack",
+        "backend engineer",
+        "software architect",
+        "cloud engineer",
+        "distributed systems"
+    };
+
     private readonly IEnumerable<IJobFeedProvider> _providers;
     private readonly IJobListingRepository _listingRepo;
     private readonly ISearchProfileRepository _profileRepo;
@@ -66,6 +83,9 @@ public class JobFeedAggregatorService
 
             try
             {
+                foreach (var listing in listings)
+                    JobWatchClassifier.ApplyTags(listing);
+
                 await _listingRepo.UpsertRangeAsync(listings, ct);
                 await _listingRepo.DeactivateMissingAsync(
                     result.Provider.Source,
@@ -87,8 +107,10 @@ public class JobFeedAggregatorService
 
     private async Task<List<string>> ResolveKeywordsAsync(CancellationToken ct)
     {
+        // Always carry the same broad senior-IC targeting used by the $140k/$160k job
+        // watches, then layer user-created profiles and resume-derived terms on top.
+        var keywords = new List<string>(CareerWatchKeywords);
         var profiles = await _profileRepo.GetActiveAsync(ct);
-        var keywords = new List<string>();
 
         foreach (var profile in profiles)
         {
@@ -110,7 +132,7 @@ public class JobFeedAggregatorService
         return keywords
             .Where(k => !string.IsNullOrWhiteSpace(k))
             .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Take(16)
+            .Take(24)
             .ToList();
     }
 

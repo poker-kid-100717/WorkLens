@@ -49,11 +49,29 @@ public static class DependencyInjection
             c.Timeout = TimeSpan.FromSeconds(20);
             c.DefaultRequestHeaders.UserAgent.ParseAdd("WorkLens/1.0 (+on-prem personal job tracker)");
         });
+        services.AddHttpClient<JobicyFeedProvider>(c =>
+        {
+            c.Timeout = TimeSpan.FromSeconds(20);
+            c.DefaultRequestHeaders.UserAgent.ParseAdd("WorkLens/1.0 (+personal job discovery)");
+        });
+        services.AddHttpClient<WeWorkRemotelyFeedProvider>(c =>
+        {
+            c.Timeout = TimeSpan.FromSeconds(20);
+            c.DefaultRequestHeaders.UserAgent.ParseAdd("WorkLens/1.0 (+personal job discovery)");
+        });
+        services.AddHttpClient<ChatGptWatchFeedProvider>(c =>
+        {
+            c.Timeout = TimeSpan.FromSeconds(15);
+            c.DefaultRequestHeaders.UserAgent.ParseAdd("WorkLens/1.0 (+personal job discovery)");
+        });
 
         services.AddScoped<IJobFeedProvider, RemoteOkFeedProvider>();
         services.AddScoped<IJobFeedProvider, RemotiveFeedProvider>();
         services.AddScoped<IJobFeedProvider, GreenhouseFeedProvider>();
         services.AddScoped<IJobFeedProvider, DiceFeedProvider>();
+        services.AddScoped<IJobFeedProvider, JobicyFeedProvider>();
+        services.AddScoped<IJobFeedProvider, WeWorkRemotelyFeedProvider>();
+        services.AddScoped<IJobFeedProvider, ChatGptWatchFeedProvider>();
 
         services.AddScoped<JobFeedAggregatorService>();
         services.AddSingleton<FeedRefreshState>();

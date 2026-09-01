@@ -9,5 +9,8 @@ public enum JobSource
     Remotive = 1,
     Greenhouse = 2,
     Manual = 3,
-    Dice = 4
+    Dice = 4,
+    Jobicy = 5,
+    WeWorkRemotely = 6,
+    ChatGptWatch = 7
 }
