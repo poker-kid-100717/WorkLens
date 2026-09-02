@@ -185,6 +185,9 @@ export interface OutlookCommunication {
   webLink: string | null;
   isRead: boolean;
   kind: string;
+  suggestedStatus: ApplicationStatus | null;
   matchedCompany: string | null;
   matchedTitle: string | null;
+  suggestedCompany: string | null;
+  suggestedTitle: string | null;
 }
