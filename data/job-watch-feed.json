@@ -1,4 +1,51 @@
 {
-  "updatedAt": null,
-  "jobs": []
+  "updatedAt": "2026-09-02T21:07:33Z",
+  "jobs": [
+    {
+      "id": "draftkings-jr14836",
+      "title": "Senior Lead Software Engineer, Backend",
+      "company": "DraftKings",
+      "location": "Remote - US",
+      "isRemote": true,
+      "salaryMin": 160700,
+      "salaryMax": 200900,
+      "salaryCurrency": "USD",
+      "url": "https://careers.draftkings.com/jobs/jr14836/senior-lead-software-engineer-backend/",
+      "whyFit": "Hands-on senior IC technical leadership with C# accepted, distributed systems and cloud architecture, real-time high-scale systems, code/design reviews, production ownership, and mentoring. U.S.-remote and the full posted base range clears $160k.",
+      "foundAt": "2026-09-02T21:07:33Z",
+      "tags": [
+        "$140k+ watch",
+        "$160k+ watch",
+        "C#",
+        "distributed systems",
+        "architecture",
+        "mentoring",
+        "remote US",
+        "senior lead"
+      ]
+    },
+    {
+      "id": "neogov-00943",
+      "title": "Senior Software Engineer",
+      "company": "NEOGOV",
+      "location": "Remote - US",
+      "isRemote": true,
+      "salaryMin": 184558,
+      "salaryMax": 184558,
+      "salaryCurrency": "USD",
+      "url": "https://www.governmentjobs.com/careers/neogovpe/jobs/newprint/5456100",
+      "whyFit": "Near-direct stack match for a senior full-stack .NET engineer: C#, .NET Core, .NET Web APIs, Angular, JavaScript, SQL, SaaS design, technical design sessions, and hands-on application development. The role can telecommute from anywhere in the U.S. and does not state a people-management mandate.",
+      "foundAt": "2026-09-02T21:07:33Z",
+      "tags": [
+        "$140k+ watch",
+        "$160k+ watch",
+        ".NET/C#",
+        "Angular",
+        "full stack",
+        "SaaS",
+        "architecture",
+        "remote US"
+      ]
+    }
+  ]
 }
