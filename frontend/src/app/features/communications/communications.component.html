@@ -1,0 +1,78 @@
+<div class="communications-page">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Outlook + application activity</p>
+      <h1>Communications</h1>
+      <p class="subtle">Recruiter replies, application confirmations, interviews, assessments, offers, and rejections in one place.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn" *ngIf="status?.isConnected" (click)="sync()" [disabled]="syncing">
+        {{ syncing ? 'Syncing…' : 'Sync Outlook' }}
+      </button>
+      <button class="btn btn-primary" *ngIf="!status?.isConnected" (click)="connect()">
+        Connect Outlook
+      </button>
+    </div>
+  </div>
+
+  <div class="connection-card card" *ngIf="status">
+    <div>
+      <span class="status-dot" [class.connected]="status.isConnected"></span>
+      <strong>{{ status.isConnected ? 'Outlook connected' : 'Outlook not connected' }}</strong>
+      <span class="account" *ngIf="status.accountEmail">{{ status.accountEmail }}</span>
+    </div>
+    <div class="sync-meta" *ngIf="status.isConnected">
+      {{ status.communicationCount }} tracked messages
+      <span *ngIf="status.lastSyncedAt">· last synced {{ status.lastSyncedAt | date:'short' }}</span>
+    </div>
+    <p class="setup-note" *ngIf="!status.isConfigured">
+      Add your Microsoft Entra app registration values to the WorkLens .env file, rebuild, then connect Outlook here.
+    </p>
+  </div>
+
+  <p class="error-text" *ngIf="error">{{ error }}</p>
+  <div class="empty-state" *ngIf="loading">Loading communications…</div>
+
+  <ng-container *ngIf="!loading && status?.isConnected">
+    <div class="toolbar">
+      <div class="filter-group">
+        <button
+          class="filter-chip"
+          *ngFor="let kind of kinds()"
+          [class.active]="filter === kind"
+          (click)="filter = kind"
+        >{{ kind }}</button>
+      </div>
+    </div>
+
+    <div class="message-list" *ngIf="filtered().length > 0">
+      <article class="message-card card" *ngFor="let message of filtered()" (click)="open(message)">
+        <div class="message-topline">
+          <span class="kind-badge">{{ message.kind }}</span>
+          <span class="direction">{{ message.direction }}</span>
+          <time>{{ message.receivedAt | date:'medium' }}</time>
+        </div>
+        <div class="message-main">
+          <div>
+            <h3>{{ message.subject }}</h3>
+            <p class="sender">{{ message.fromName || message.fromEmail || 'Unknown sender' }}</p>
+          </div>
+          <div class="match" *ngIf="message.applicationId">
+            <span>Matched application</span>
+            <strong>{{ message.matchedTitle }}</strong>
+            <small>{{ message.matchedCompany }}</small>
+          </div>
+          <div class="match unmatched" *ngIf="!message.applicationId">
+            <span>Job-related</span>
+            <strong>Not matched yet</strong>
+          </div>
+        </div>
+        <p class="preview" *ngIf="message.preview">{{ message.preview }}</p>
+      </article>
+    </div>
+
+    <div class="empty-state card" *ngIf="filtered().length === 0">
+      No matching Outlook messages yet. Sync Outlook after applying to jobs or receiving recruiter email.
+    </div>
+  </ng-container>
+</div>
