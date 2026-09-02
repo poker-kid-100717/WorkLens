@@ -83,6 +83,7 @@ public static class DependencyInjection
         services.AddScoped<ResumeMatchOrchestrator>();
 
         services.AddHttpClient<OutlookCommunicationService>(c => c.Timeout = TimeSpan.FromSeconds(45));
+        services.AddHostedService<OutlookSyncBackgroundService>();
 
         return services;
     }
