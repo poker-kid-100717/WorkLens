@@ -1,0 +1,200 @@
+.communications-page {
+  display: grid;
+  gap: 18px;
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.page-header h1 {
+  margin: 2px 0 6px;
+  font-size: 30px;
+  letter-spacing: -0.03em;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-muted, #64748b);
+}
+
+.subtle,
+.sync-meta,
+.account,
+.sender,
+.preview,
+.match span,
+.match small {
+  color: var(--text-muted, #64748b);
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.connection-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 8px;
+  border-radius: 999px;
+  background: #94a3b8;
+}
+
+.status-dot.connected {
+  background: #16a34a;
+}
+
+.account {
+  margin-left: 10px;
+}
+
+.setup-note {
+  margin: 0;
+  max-width: 720px;
+}
+
+.toolbar {
+  overflow-x: auto;
+}
+
+.filter-group {
+  display: flex;
+  gap: 8px;
+  min-width: max-content;
+}
+
+.filter-chip {
+  border: 1px solid var(--border, #dbe3ee);
+  background: #fff;
+  border-radius: 999px;
+  padding: 7px 11px;
+  cursor: pointer;
+  color: #475569;
+  font-weight: 600;
+}
+
+.filter-chip.active {
+  color: #1d4ed8;
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.message-list {
+  display: grid;
+  gap: 10px;
+}
+
+.message-card {
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.message-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .08);
+}
+
+.message-topline {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.message-topline time {
+  margin-left: auto;
+}
+
+.kind-badge {
+  background: #eef2ff;
+  color: #4338ca;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-weight: 700;
+}
+
+.direction {
+  font-weight: 700;
+}
+
+.message-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 20px;
+  align-items: start;
+  margin-top: 10px;
+}
+
+.message-main h3 {
+  margin: 0 0 4px;
+  font-size: 17px;
+}
+
+.sender,
+.preview {
+  margin: 0;
+}
+
+.preview {
+  margin-top: 12px;
+  line-height: 1.5;
+}
+
+.match {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.match strong {
+  font-size: 13px;
+}
+
+.match.unmatched {
+  background: #fff7ed;
+}
+
+.error-text {
+  color: #b91c1c;
+}
+
+@media (max-width: 760px) {
+  .page-header,
+  .connection-card {
+    flex-direction: column;
+  }
+
+  .message-main {
+    grid-template-columns: 1fr;
+  }
+
+  .message-topline {
+    flex-wrap: wrap;
+  }
+
+  .message-topline time {
+    width: 100%;
+    margin-left: 0;
+  }
+}

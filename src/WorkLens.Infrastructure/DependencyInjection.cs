@@ -28,6 +28,7 @@ public static class DependencyInjection
         services.Configure<FeedRefreshOptions>(configuration.GetSection("JobFeeds"));
         services.Configure<GreenhouseOptions>(configuration.GetSection("JobFeeds:Greenhouse"));
         services.Configure<OpenAiOptions>(configuration.GetSection("JobFeeds:OpenAi"));
+        services.Configure<OutlookOptions>(configuration.GetSection("Outlook"));
 
         services.AddHttpClient<RemoteOkFeedProvider>(c =>
         {
@@ -80,6 +81,9 @@ public static class DependencyInjection
         services.AddHttpClient<OpenAiResumeMatchingService>(c => c.Timeout = TimeSpan.FromSeconds(45));
         services.AddScoped<IResumeMatchingService, OpenAiResumeMatchingService>();
         services.AddScoped<ResumeMatchOrchestrator>();
+
+        services.AddHttpClient<OutlookCommunicationService>(c => c.Timeout = TimeSpan.FromSeconds(45));
+        services.AddHostedService<OutlookSyncBackgroundService>();
 
         return services;
     }

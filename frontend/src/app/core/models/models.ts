@@ -164,3 +164,30 @@ export interface JobMatch {
   summary: string;
   scoredAt: string;
 }
+
+export interface OutlookConnectionStatus {
+  isConfigured: boolean;
+  isConnected: boolean;
+  accountEmail: string | null;
+  lastSyncedAt: string | null;
+  communicationCount: number;
+}
+
+export interface OutlookCommunication {
+  messageId: string;
+  applicationId: number | null;
+  direction: 'Inbound' | 'Outbound' | string;
+  subject: string;
+  fromName: string | null;
+  fromEmail: string | null;
+  receivedAt: string;
+  preview: string | null;
+  webLink: string | null;
+  isRead: boolean;
+  kind: string;
+  suggestedStatus: ApplicationStatus | null;
+  matchedCompany: string | null;
+  matchedTitle: string | null;
+  suggestedCompany: string | null;
+  suggestedTitle: string | null;
+}

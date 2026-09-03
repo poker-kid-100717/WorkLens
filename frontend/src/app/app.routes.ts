@@ -11,6 +11,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/tracker/tracker.component').then((m) => m.TrackerComponent)
   },
   {
+    path: 'communications',
+    loadComponent: () =>
+      import('./features/communications/communications.component').then((m) => m.CommunicationsComponent)
+  },
+  {
     path: 'analytics',
     loadComponent: () => import('./features/analytics/analytics.component').then((m) => m.AnalyticsComponent)
   },

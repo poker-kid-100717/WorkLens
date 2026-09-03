@@ -4,6 +4,7 @@ networks:
 
 volumes:
   sqlserver-data:
+  outlook-data:
 
 services:
   sqlserver:
@@ -15,8 +16,6 @@ services:
       MSSQL_SA_PASSWORD: "${SQL_SA_PASSWORD:?Set SQL_SA_PASSWORD in your .env file}"
       MSSQL_PID: "Express"
     ports:
-      # Exposed on the host for ad-hoc access (SSMS/Azure Data Studio) — remove this
-      # mapping if you don't want SQL Server reachable outside the Docker network.
       - "1433:1433"
     volumes:
       - sqlserver-data:/var/opt/mssql
@@ -43,13 +42,19 @@ services:
       ConnectionStrings__WorkLensDb: "Server=sqlserver,1433;Database=WorkLensDb;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;"
       Cors__AllowedOrigins__0: "http://localhost:8080"
       JobFeeds__RefreshIntervalSeconds: "${FEED_REFRESH_INTERVAL_SECONDS:-120}"
-      # Comma-free JSON array via individual keys; add more BoardTokens__N lines for
-      # additional Greenhouse companies (find the token in a company's career page URL:
-      # boards.greenhouse.io/{board_token}).
       JobFeeds__Greenhouse__BoardTokens__0: "${GREENHOUSE_BOARD_TOKEN_0:-}"
       JobFeeds__OpenAi__ApiKey: "${OPENAI_API_KEY:-}"
       JobFeeds__OpenAi__Model: "${OPENAI_MODEL:-gpt-4o-mini}"
+      Outlook__ClientId: "${OUTLOOK_CLIENT_ID:-}"
+      Outlook__ClientSecret: "${OUTLOOK_CLIENT_SECRET:-}"
+      Outlook__Tenant: "${OUTLOOK_TENANT:-common}"
+      Outlook__RedirectUri: "${OUTLOOK_REDIRECT_URI:-http://localhost:5080/api/outlook/callback}"
+      Outlook__FrontendRedirectUri: "${OUTLOOK_FRONTEND_REDIRECT_URI:-http://localhost:8080/communications}"
+      Outlook__StorePath: "/app/data/outlook-state.json"
+      Outlook__LookbackDays: "${OUTLOOK_LOOKBACK_DAYS:-90}"
       Swagger__Enabled: "${SWAGGER_ENABLED:-true}"
+    volumes:
+      - outlook-data:/app/data
     ports:
       - "5080:8080"
     networks:
