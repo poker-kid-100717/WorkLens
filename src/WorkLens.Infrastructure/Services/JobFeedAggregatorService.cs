@@ -1,16 +1,19 @@
 using System.Text.Json;
-using WorkLens.Core.Interfaces;
 using Microsoft.Extensions.Logging;
+using WorkLens.Core.Interfaces;
 
 namespace WorkLens.Infrastructure.Services;
 
 /// <summary>
-/// Orchestrates a single refresh cycle. Network-bound provider fetches run in parallel,
-/// then database mutations are applied sequentially so a scoped EF Core DbContext is
-/// never used concurrently across multiple threads.
+/// Orchestrates a feed refresh cycle. Provider I/O runs concurrently, while persistence
+/// is applied sequentially so the scoped EF Core DbContext is never used concurrently.
+/// Refresh cycles themselves are serialized to prevent a manual refresh from overlapping
+/// the hosted background refresh in the same process.
 /// </summary>
 public class JobFeedAggregatorService
 {
+    private static readonly SemaphoreSlim RefreshGate = new(1, 1);
+
     private static readonly string[] CareerWatchKeywords =
     {
         "software engineer",
@@ -53,6 +56,19 @@ public class JobFeedAggregatorService
 
     public async Task RefreshAllAsync(CancellationToken ct)
     {
+        await RefreshGate.WaitAsync(ct);
+        try
+        {
+            await RefreshCoreAsync(ct);
+        }
+        finally
+        {
+            RefreshGate.Release();
+        }
+    }
+
+    private async Task RefreshCoreAsync(CancellationToken ct)
+    {
         var keywords = await ResolveKeywordsAsync(ct);
 
         var fetchTasks = _providers.Select(async provider =>
@@ -61,6 +77,10 @@ public class JobFeedAggregatorService
             {
                 var listings = await provider.FetchAsync(keywords, ct);
                 return new ProviderFetchResult(provider, listings, null);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -75,7 +95,7 @@ public class JobFeedAggregatorService
             if (result.Error is not null)
             {
                 _logger.LogError(result.Error, "Feed provider {Source} failed", result.Provider.Source);
-                _state.RecordFailure(result.Provider.Source, result.Error.Message);
+                _state.RecordFailure(result.Provider.Source, "Provider refresh failed");
                 continue;
             }
 
@@ -94,10 +114,14 @@ public class JobFeedAggregatorService
 
                 _state.RecordSuccess(result.Provider.Source, listings.Count);
             }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Persisting feed provider {Source} failed", result.Provider.Source);
-                _state.RecordFailure(result.Provider.Source, ex.Message);
+                _state.RecordFailure(result.Provider.Source, "Provider persistence failed");
             }
         }
 
@@ -107,8 +131,6 @@ public class JobFeedAggregatorService
 
     private async Task<List<string>> ResolveKeywordsAsync(CancellationToken ct)
     {
-        // Always carry the same broad senior-IC targeting used by the $140k/$160k job
-        // watches, then layer user-created profiles and resume-derived terms on top.
         var keywords = new List<string>(CareerWatchKeywords);
         var profiles = await _profileRepo.GetActiveAsync(ct);
 
@@ -117,11 +139,12 @@ public class JobFeedAggregatorService
             try
             {
                 var parsed = JsonSerializer.Deserialize<List<string>>(profile.KeywordsJson);
-                if (parsed != null) keywords.AddRange(parsed);
+                if (parsed is not null)
+                    keywords.AddRange(parsed);
             }
-            catch (JsonException)
+            catch (JsonException ex)
             {
-                // Malformed keyword JSON on a profile shouldn't take down the whole refresh.
+                _logger.LogWarning(ex, "Search profile {ProfileId} contains invalid keyword JSON", profile.Id);
             }
         }
 
