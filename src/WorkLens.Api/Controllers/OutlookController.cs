@@ -1,6 +1,6 @@
-using WorkLens.Infrastructure.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using WorkLens.Infrastructure.Services;
 
 namespace WorkLens.Api.Controllers;
 
@@ -10,11 +10,16 @@ public class OutlookController : ControllerBase
 {
     private readonly OutlookCommunicationService _outlook;
     private readonly OutlookOptions _options;
+    private readonly ILogger<OutlookController> _logger;
 
-    public OutlookController(OutlookCommunicationService outlook, IOptions<OutlookOptions> options)
+    public OutlookController(
+        OutlookCommunicationService outlook,
+        IOptions<OutlookOptions> options,
+        ILogger<OutlookController> logger)
     {
         _outlook = outlook;
         _options = options.Value;
+        _logger = logger;
     }
 
     [HttpGet("status")]
@@ -38,21 +43,27 @@ public class OutlookController : ControllerBase
         CancellationToken ct)
     {
         if (!string.IsNullOrWhiteSpace(error))
-            return Redirect($"{_options.FrontendRedirectUri}?outlook=error&message={Uri.EscapeDataString(error)}");
+        {
+            _logger.LogWarning("Microsoft authorization returned error {Error}", error);
+            return Redirect(BuildFrontendResult("error", "authorization_failed"));
+        }
+
         if (string.IsNullOrWhiteSpace(code))
-            return Redirect($"{_options.FrontendRedirectUri}?outlook=error&message=missing_code");
+            return Redirect(BuildFrontendResult("error", "missing_code"));
+
         if (string.IsNullOrWhiteSpace(state))
-            return Redirect($"{_options.FrontendRedirectUri}?outlook=error&message=missing_state");
+            return Redirect(BuildFrontendResult("error", "missing_state"));
 
         try
         {
             await _outlook.ConnectAsync(code, state, ct);
             await _outlook.SyncAsync(ct);
-            return Redirect($"{_options.FrontendRedirectUri}?outlook=connected");
+            return Redirect(BuildFrontendResult("connected"));
         }
         catch (Exception ex)
         {
-            return Redirect($"{_options.FrontendRedirectUri}?outlook=error&message={Uri.EscapeDataString(ex.Message)}");
+            _logger.LogError(ex, "Outlook authorization callback failed");
+            return Redirect(BuildFrontendResult("error", "connection_failed"));
         }
     }
 
@@ -112,6 +123,13 @@ public class OutlookController : ControllerBase
         {
             return NotFound(ex.Message);
         }
+    }
+
+    private string BuildFrontendResult(string result, string? message = null)
+    {
+        var separator = _options.FrontendRedirectUri.Contains('?') ? '&' : '?';
+        var url = $"{_options.FrontendRedirectUri}{separator}outlook={Uri.EscapeDataString(result)}";
+        return message is null ? url : $"{url}&message={Uri.EscapeDataString(message)}";
     }
 }
 

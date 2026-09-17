@@ -1,12 +1,12 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { Subject, Subscription, interval, startWith, switchMap, takeUntil } from 'rxjs';
-import { FeedService } from '../../core/services/feed.service';
-import { ApplicationsService } from '../../core/services/applications.service';
-import { ResumeService } from '../../core/services/resume.service';
+import { EMPTY, Subject, Subscription, catchError, interval, startWith, switchMap, takeUntil, tap } from 'rxjs';
 import { FeedResponse, JobListing, JobMatch } from '../../core/models/models';
+import { ApplicationsService } from '../../core/services/applications.service';
+import { FeedService } from '../../core/services/feed.service';
+import { ResumeService } from '../../core/services/resume.service';
 
 @Component({
   selector: 'app-feed',
@@ -34,39 +34,46 @@ export class FeedComponent implements OnInit, OnDestroy {
   matches = new Map<number, JobMatch>();
   matching = false;
 
-  private readonly POLL_MS = 7000;
-  private destroy$ = new Subject<void>();
-  private poll$?: Subscription;
+  private readonly pollIntervalMs = 7_000;
+  private readonly destroy$ = new Subject<void>();
+  private pollSubscription?: Subscription;
 
   constructor(
-    private feedService: FeedService,
-    private applicationsService: ApplicationsService,
-    private resumeService: ResumeService
+    private readonly feedService: FeedService,
+    private readonly applicationsService: ApplicationsService,
+    private readonly resumeService: ResumeService
   ) {}
 
   ngOnInit(): void {
-    this.resumeService.hasActiveResume().subscribe({
-      next: (has) => {
-        this.hasResume = has;
-        if (has) this.remoteOnly = true;
-        this.startPolling();
-      },
-      error: () => {
-        this.hasResume = false;
-        this.startPolling();
-      }
-    });
+    this.resumeService.hasActiveResume()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (has) => {
+          this.hasResume = has;
+          if (has) this.remoteOnly = true;
+          this.startPolling();
+        },
+        error: () => {
+          this.hasResume = false;
+          this.startPolling();
+        }
+      });
   }
 
   ngOnDestroy(): void {
+    this.pollSubscription?.unsubscribe();
     this.destroy$.next();
     this.destroy$.complete();
   }
 
   startPolling(): void {
-    this.poll$?.unsubscribe();
-    this.poll$ = interval(this.POLL_MS)
-      .pipe(startWith(0), takeUntil(this.destroy$), switchMap(() => this.fetch()))
+    this.pollSubscription?.unsubscribe();
+    this.pollSubscription = interval(this.pollIntervalMs)
+      .pipe(
+        startWith(0),
+        switchMap(() => this.fetch()),
+        takeUntil(this.destroy$)
+      )
       .subscribe();
   }
 
@@ -80,12 +87,16 @@ export class FeedComponent implements OnInit, OnDestroy {
         pageSize: this.pageSize
       })
       .pipe(
-        switchMap((response) => {
+        tap((response) => {
           this.feed = response;
           this.loading = false;
           this.error = null;
           if (this.hasResume) queueMicrotask(() => this.scoreVisibleJobs());
-          return [response];
+        }),
+        catchError(() => {
+          this.loading = false;
+          this.error = 'Could not load the job feed. The next automatic refresh will retry.';
+          return EMPTY;
         })
       );
   }
@@ -96,13 +107,15 @@ export class FeedComponent implements OnInit, OnDestroy {
     if (ids.length === 0) return;
 
     this.matching = true;
-    this.resumeService.scoreJobs(ids).subscribe({
-      next: (results) => {
-        for (const m of results) this.matches.set(m.jobListingId, m);
-        this.matching = false;
-      },
-      error: () => (this.matching = false)
-    });
+    this.resumeService.scoreJobs(ids)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (results) => {
+          for (const match of results) this.matches.set(match.jobListingId, match);
+          this.matching = false;
+        },
+        error: () => (this.matching = false)
+      });
   }
 
   matchFor(jobId: number): JobMatch | undefined {
@@ -128,27 +141,31 @@ export class FeedComponent implements OnInit, OnDestroy {
 
   refreshNow(): void {
     this.refreshing = true;
-    this.feedService.refreshNow().subscribe({
-      next: () => {
-        this.refreshing = false;
-        this.matches.clear();
-        this.startPolling();
-      },
-      error: () => (this.refreshing = false)
-    });
+    this.feedService.refreshNow()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.refreshing = false;
+          this.matches.clear();
+          this.startPolling();
+        },
+        error: () => (this.refreshing = false)
+      });
   }
 
   saveJob(job: JobListing): void {
     if (job.applicationId || this.savingIds.has(job.id)) return;
     this.savingIds.add(job.id);
-    this.applicationsService.create({ jobListingId: job.id }).subscribe({
-      next: (app) => {
-        job.applicationId = app.id;
-        job.applicationStatus = app.status;
-        this.savingIds.delete(job.id);
-      },
-      error: () => this.savingIds.delete(job.id)
-    });
+    this.applicationsService.create({ jobListingId: job.id })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (app) => {
+          job.applicationId = app.id;
+          job.applicationStatus = app.status;
+          this.savingIds.delete(job.id);
+        },
+        error: () => this.savingIds.delete(job.id)
+      });
   }
 
   secondsAgo(iso: string | null): string {

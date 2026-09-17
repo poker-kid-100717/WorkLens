@@ -1,7 +1,7 @@
+using Microsoft.EntityFrameworkCore;
 using WorkLens.Core.Entities;
 using WorkLens.Core.Interfaces;
 using WorkLens.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace WorkLens.Infrastructure.Repositories;
 
@@ -11,13 +11,13 @@ public class JobApplicationRepository : IJobApplicationRepository
 
     public JobApplicationRepository(WorkLensDbContext db) => _db = db;
 
-    public Task<IReadOnlyList<JobApplication>> GetAllAsync(CancellationToken ct) =>
-        _db.JobApplications
+    public async Task<IReadOnlyList<JobApplication>> GetAllAsync(CancellationToken ct) =>
+        await _db.JobApplications
+            .AsNoTracking()
             .Include(a => a.JobListing)
             .Include(a => a.StatusHistory)
             .OrderByDescending(a => a.SavedAt)
-            .ToListAsync(ct)
-            .ContinueWith(t => (IReadOnlyList<JobApplication>)t.Result, ct);
+            .ToListAsync(ct);
 
     public Task<JobApplication?> GetByIdAsync(int id, CancellationToken ct) =>
         _db.JobApplications

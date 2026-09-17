@@ -1,8 +1,8 @@
+using Microsoft.EntityFrameworkCore;
 using WorkLens.Core.Entities;
 using WorkLens.Core.Enums;
 using WorkLens.Core.Interfaces;
 using WorkLens.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 namespace WorkLens.Infrastructure.Repositories;
 
@@ -15,7 +15,11 @@ public class JobListingRepository : IJobListingRepository
     public async Task<(IReadOnlyList<JobListing> Items, int TotalCount)> GetPagedAsync(
         string? search, bool? remoteOnly, bool? trackedOnly, int page, int pageSize, CancellationToken ct)
     {
-        var query = _db.JobListings.Include(j => j.Application).Where(j => j.IsActive).AsQueryable();
+        var query = _db.JobListings
+            .AsNoTracking()
+            .Include(j => j.Application)
+            .Where(j => j.IsActive)
+            .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -56,17 +60,25 @@ public class JobListingRepository : IJobListingRepository
 
     public async Task UpsertRangeAsync(IReadOnlyList<JobListing> listings, CancellationToken ct)
     {
-        foreach (var incoming in listings)
-        {
-            var existing = await _db.JobListings.FirstOrDefaultAsync(
-                j => j.Source == incoming.Source && j.ExternalId == incoming.ExternalId, ct);
+        if (listings.Count == 0)
+            return;
 
-            if (existing is null)
+        foreach (var sourceGroup in listings.GroupBy(x => x.Source))
+        {
+            var externalIds = sourceGroup.Select(x => x.ExternalId).Distinct().ToArray();
+            var existingByExternalId = await _db.JobListings
+                .Where(x => x.Source == sourceGroup.Key && externalIds.Contains(x.ExternalId))
+                .ToDictionaryAsync(x => x.ExternalId, StringComparer.Ordinal, ct);
+
+            foreach (var incoming in sourceGroup)
             {
-                _db.JobListings.Add(incoming);
-            }
-            else
-            {
+                if (!existingByExternalId.TryGetValue(incoming.ExternalId, out var existing))
+                {
+                    await _db.JobListings.AddAsync(incoming, ct);
+                    existingByExternalId[incoming.ExternalId] = incoming;
+                    continue;
+                }
+
                 existing.Title = incoming.Title;
                 existing.Company = incoming.Company;
                 existing.Location = incoming.Location;
@@ -78,6 +90,7 @@ public class JobListingRepository : IJobListingRepository
                 existing.Url = incoming.Url;
                 existing.DescriptionHtml = incoming.DescriptionHtml;
                 existing.CompanyLogoUrl = incoming.CompanyLogoUrl;
+                existing.PostedAt = incoming.PostedAt;
                 existing.FetchedAt = incoming.FetchedAt;
                 existing.IsActive = true;
             }
@@ -86,12 +99,13 @@ public class JobListingRepository : IJobListingRepository
 
     public async Task DeactivateMissingAsync(JobSource source, IReadOnlyList<string> seenExternalIds, CancellationToken ct)
     {
-        var toDeactivate = await _db.JobListings
-            .Where(j => j.Source == source && j.IsActive && !seenExternalIds.Contains(j.ExternalId))
-            .ToListAsync(ct);
+        var query = _db.JobListings.Where(j => j.Source == source && j.IsActive);
+        if (seenExternalIds.Count > 0)
+            query = query.Where(j => !seenExternalIds.Contains(j.ExternalId));
 
-        foreach (var listing in toDeactivate)
-            listing.IsActive = false;
+        await query.ExecuteUpdateAsync(
+            setters => setters.SetProperty(j => j.IsActive, false),
+            ct);
     }
 
     public Task<int> SaveChangesAsync(CancellationToken ct) => _db.SaveChangesAsync(ct);
