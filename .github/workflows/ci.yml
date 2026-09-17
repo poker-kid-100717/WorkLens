@@ -7,6 +7,9 @@ on:
     branches: [main]
   workflow_dispatch: {}
 
+permissions:
+  contents: write
+
 env:
   DOTNET_VERSION: '10.0.x'
   NODE_VERSION: '22.x'
@@ -75,6 +78,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -82,7 +87,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Install pinned dependencies
-        run: npm install --package-lock=false
+        run: npm install
 
       - name: Build (production)
         run: npm run build
@@ -91,7 +96,19 @@ jobs:
         run: npm test
 
       - name: Dependency audit
-        run: npm audit --package-lock-only --audit-level=critical
+        run: npm audit --audit-level=critical
+
+      - name: Commit validated package lock
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Commit validated Angular 20 lockfile"
+            git push origin HEAD:${{ github.head_ref }}
+          fi
 
   extension:
     name: Browser extension
@@ -102,15 +119,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-
       - name: Validate manifest
         run: node -e "JSON.parse(require('fs').readFileSync('manifest.json', 'utf8')); console.log('manifest.json OK')"
-
       - name: Check manifest-referenced JavaScript files
         run: |
           node -e "
@@ -121,37 +135,26 @@ jobs:
             for (const cs of manifest.content_scripts ?? []) for (const f of cs.js ?? []) referenced.add(f);
             let missing = false;
             for (const file of referenced) {
-              if (!fs.existsSync(file)) {
-                console.error('Missing file referenced by manifest.json:', file);
-                missing = true;
-              }
+              if (!fs.existsSync(file)) { console.error('Missing file referenced by manifest.json:', file); missing = true; }
             }
             if (missing) process.exit(1);
             console.log('All manifest-referenced files exist:', [...referenced].join(', '));
           "
-
       - name: Syntax-check JavaScript
         run: |
-          for f in *.js; do
-            echo "Checking $f"
-            node --check "$f"
-          done
+          for f in *.js; do node --check "$f"; done
 
   docker-compose:
     name: Docker Compose validation
     runs-on: ubuntu-latest
     env:
       SQL_SA_PASSWORD: 'Ci_Build_Passw0rd!'
-
     steps:
       - uses: actions/checkout@v4
-
       - name: Validate compose configuration
         run: docker compose config --quiet
-
       - name: Build API image
         run: docker compose build api
-
       - name: Build frontend image
         run: docker compose build frontend
 
@@ -161,18 +164,14 @@ jobs:
     defaults:
       run:
         working-directory: portfolio-site
-
     steps:
       - uses: actions/checkout@v4
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-
       - name: Validate HTML
         run: npx --yes html-validate index.html
-
       - name: Check relative asset links
         run: |
           node -e "
@@ -183,10 +182,7 @@ jobs:
               .filter(u => !u.startsWith('http') && !u.startsWith('mailto:') && !u.startsWith('tel:') && !u.startsWith('#'));
             let missing = false;
             for (const ref of refs) {
-              if (!fs.existsSync(ref)) {
-                console.error('Broken local reference:', ref);
-                missing = true;
-              }
+              if (!fs.existsSync(ref)) { console.error('Broken local reference:', ref); missing = true; }
             }
             if (missing) process.exit(1);
             console.log('All local asset references resolve:', refs.join(', '));
