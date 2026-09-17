@@ -15,8 +15,6 @@ services:
       ACCEPT_EULA: "Y"
       MSSQL_SA_PASSWORD: "${SQL_SA_PASSWORD:?Set SQL_SA_PASSWORD in your .env file}"
       MSSQL_PID: "Express"
-    ports:
-      - "1433:1433"
     volumes:
       - sqlserver-data:/var/opt/mssql
     networks:
@@ -41,6 +39,7 @@ services:
       ASPNETCORE_ENVIRONMENT: "Production"
       ConnectionStrings__WorkLensDb: "Server=sqlserver,1433;Database=WorkLensDb;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;"
       Cors__AllowedOrigins__0: "http://localhost:8080"
+      Database__AutoMigrate: "true"
       JobFeeds__RefreshIntervalSeconds: "${FEED_REFRESH_INTERVAL_SECONDS:-120}"
       JobFeeds__Greenhouse__BoardTokens__0: "${GREENHOUSE_BOARD_TOKEN_0:-}"
       JobFeeds__OpenAi__ApiKey: "${OPENAI_API_KEY:-}"
@@ -48,15 +47,13 @@ services:
       Outlook__ClientId: "${OUTLOOK_CLIENT_ID:-}"
       Outlook__ClientSecret: "${OUTLOOK_CLIENT_SECRET:-}"
       Outlook__Tenant: "${OUTLOOK_TENANT:-common}"
-      Outlook__RedirectUri: "${OUTLOOK_REDIRECT_URI:-http://localhost:5080/api/outlook/callback}"
+      Outlook__RedirectUri: "${OUTLOOK_REDIRECT_URI:-http://localhost:8080/api/outlook/callback}"
       Outlook__FrontendRedirectUri: "${OUTLOOK_FRONTEND_REDIRECT_URI:-http://localhost:8080/communications}"
       Outlook__StorePath: "/app/data/outlook-state.json"
       Outlook__LookbackDays: "${OUTLOOK_LOOKBACK_DAYS:-90}"
-      Swagger__Enabled: "${SWAGGER_ENABLED:-true}"
+      Swagger__Enabled: "${SWAGGER_ENABLED:-false}"
     volumes:
       - outlook-data:/app/data
-    ports:
-      - "5080:8080"
     networks:
       - worklens-net
 
