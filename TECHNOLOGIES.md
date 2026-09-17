@@ -10,11 +10,11 @@ This document records the runtime, build, integration, and operational tooling u
 | Domain / infrastructure | C# | `net10.0` |
 | ORM | Entity Framework Core | 10.0.11 |
 | Database | SQL Server | 2022 container |
-| Frontend | Angular | 18.2.x |
-| Reactive client | RxJS | 7.8.x |
+| Frontend | Angular | 20.3.x |
+| Reactive client | RxJS | 7.8.2 |
 | Reverse proxy | nginx | 1.27 Alpine |
 | Containers | Docker / Compose | Compose v2 |
-| Resume PDF extraction | PDF.js (`pdfjs-dist`) | 4.10.38+ |
+| Resume PDF extraction | PDF.js (`pdfjs-dist`) | 4.10.38 |
 | Browser extension | Chrome/Edge Manifest V3 | plain JavaScript |
 | CI | GitHub Actions | Ubuntu runners |
 
@@ -51,12 +51,13 @@ Development/build prerequisites:
 
 | Tool | Version |
 | --- | --- |
-| Node.js | 20.x |
-| npm | version bundled with Node 20 |
-| Angular CLI | 18.2.x |
-| TypeScript | 5.5.x |
+| Node.js | 22.x |
+| npm | version bundled with Node 22 |
+| Angular | 20.3.x |
+| Angular CLI | 20.3.x |
+| TypeScript | 5.9.3 |
 
-The production Angular application is compiled in a Node build stage and copied into an nginx runtime image. The browser calls relative `/api` URLs; nginx proxies those requests to the API container over the private Docker network.
+Direct frontend dependencies are pinned to the versions validated by CI. The production Angular application is compiled in a Node 22 build stage and copied into an nginx runtime image. The browser calls relative `/api` URLs; nginx proxies those requests to the API container over the private Docker network.
 
 ## External integrations
 
@@ -100,9 +101,9 @@ http://localhost:8080/api/outlook/callback
 
 The normal full-stack Compose profile runs:
 
-1. `sqlserver` — SQL Server 2022 Express, private Docker network only.
-2. `api` — ASP.NET Core 10, private Docker network only.
-3. `frontend` — nginx + Angular, published as host port `8080`.
+1. `sqlserver` - SQL Server 2022 Express, private Docker network only.
+2. `api` - ASP.NET Core 10, private Docker network only.
+3. `frontend` - nginx + Angular, published as host port `8080`.
 
 Only the nginx gateway is published by the normal stack. `docker-compose.sql.yml` is a separate local-development profile that deliberately publishes SQL Server on port 1433.
 
@@ -130,6 +131,7 @@ Backend unit tests live under `tests/WorkLens.Infrastructure.Tests`. The solutio
 - `dotnet test`
 - EF migration execution against a real SQL Server service container
 - API publish smoke test
+- pinned frontend dependency install
 - Angular production build
 - Angular headless unit tests
 - critical npm dependency audit
@@ -149,7 +151,7 @@ For source-level backend development:
 
 For source-level frontend development:
 
-- Node.js 20.x
+- Node.js 22.x
 - npm
 - Angular CLI through the repository (`npx ng`)
 
@@ -159,7 +161,7 @@ When changing a major framework/runtime version:
 
 1. Keep target frameworks and corresponding framework packages on compatible lines.
 2. Update the EF Core runtime, design package, and `dotnet-ef` together.
-3. Recreate/verify the lock file for npm changes.
+3. Pin and re-verify the frontend dependency graph after npm changes.
 4. Run backend and frontend test suites.
 5. Apply all EF migrations to a clean SQL Server instance.
 6. Build both Docker images.
