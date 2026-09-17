@@ -1,6 +1,6 @@
 # WorkLens
 
-WorkLens is a self-hosted job-discovery and application-tracking platform built as a full-stack reference application. It combines an ASP.NET Core 10 API, SQL Server, Angular 18, background integrations, optional AI-assisted resume matching, Microsoft Outlook communication tracking, a Manifest V3 browser extension, Docker Compose, and GitHub Actions.
+WorkLens is a self-hosted job-discovery and application-tracking platform built as a full-stack reference application. It combines an ASP.NET Core 10 API, SQL Server, Angular 20, background integrations, optional AI-assisted resume matching, Microsoft Outlook communication tracking, a Manifest V3 browser extension, Docker Compose, and GitHub Actions.
 
 The project is intentionally designed as a **single-user, self-hosted system** rather than a multi-tenant SaaS product. That keeps the domain focused while still demonstrating production-oriented architecture, integration boundaries, persistence, background processing, CI, containerization, and frontend delivery.
 
@@ -97,7 +97,7 @@ Feed ingestion performs batched lookups when upserting provider results instead 
 
 `FeedRefreshBackgroundService` creates a fresh DI scope per refresh cycle. External provider requests are network-bound and run concurrently; persistence is then applied through the scoped EF Core context without using the context concurrently across threads.
 
-Provider failures are isolated so one unavailable source does not prevent healthy sources from refreshing. Feed health is exposed to the UI from in-memory refresh state.
+Provider failures are isolated so one unavailable source does not prevent healthy sources from refreshing. Manual and background feed refreshes are serialized so they cannot overlap and mutate the same logical feed concurrently. Feed health is exposed to the UI from in-memory refresh state.
 
 ### API behavior
 
@@ -110,7 +110,7 @@ Provider failures are isolated so one unavailable source does not prevent health
 
 ## Frontend design
 
-The Angular client uses standalone components and lazy route loading. API access is isolated behind typed services. The production app calls relative `/api` routes, allowing nginx to provide a same-origin gateway and avoiding environment-specific API URLs baked into the bundle.
+The Angular 20 client uses standalone components and lazy route loading. API access is isolated behind typed services. The production app calls relative `/api` routes, allowing nginx to provide a same-origin gateway and avoiding environment-specific API URLs baked into the bundle.
 
 The feed uses RxJS polling against WorkLens's cached API, not against upstream job boards. Network errors leave the polling pipeline alive so a later interval can recover without a full page reload.
 
@@ -129,7 +129,7 @@ This avoids presenting brittle scraping as an integration strategy.
 
 ## Resume matching
 
-Resume matching is optional. Set `OPENAI_API_KEY` to enable it. Match scoring is explicitly user-triggered rather than part of the seven-second UI poll, and results are cached in `JobMatches` by resume/listing pair.
+Resume matching is optional. Set `OPENAI_API_KEY` to enable it. Match scoring is explicitly user-triggered rather than part of the UI poll, and results are cached in `JobMatches` by resume/listing pair.
 
 The OpenAI provider is implemented behind `IResumeMatchingService`, keeping provider-specific HTTP code in Infrastructure and allowing another implementation to be substituted without changing the API or domain layer.
 
@@ -219,7 +219,7 @@ Then run the Angular development server:
 
 ```bash
 cd frontend
-npm ci
+npm install --package-lock=false
 npm start
 ```
 
@@ -256,7 +256,7 @@ Permissions are deliberately limited to storage, active-tab/scripting behavior, 
 | Job | Validation |
 | --- | --- |
 | Backend | restore, Release build, `dotnet format`, unit tests, real SQL Server migration test, publish smoke test |
-| Frontend | clean npm install, production build, headless unit tests, critical dependency audit |
+| Frontend | pinned dependency install, production build, headless unit tests, critical dependency audit |
 | Extension | manifest validation, referenced-file checks, JavaScript syntax checks |
 | Docker Compose | configuration validation and API/frontend image builds |
 | Portfolio | HTML validation and relative-asset checks |
@@ -267,6 +267,6 @@ The workflow deliberately contains no deployment step. This repository is self-h
 
 WorkLens is intentionally not pretending to be a multi-tenant enterprise SaaS product. Authentication/authorization between multiple users, distributed cache, horizontal orchestration, queue-backed ingestion, centralized observability, and managed secret stores would be appropriate additions if the deployment model changed.
 
-For its actual scope—a private, single-user job-search platform—the architecture keeps those concerns out while still maintaining clear dependency boundaries, bounded external calls, persistent migrations, error isolation, container networking, CI, and testable business logic.
+For its actual scope - a private, single-user job-search platform - the architecture keeps those concerns out while still maintaining clear dependency boundaries, bounded external calls, persistent migrations, error isolation, container networking, CI, and testable business logic.
 
 See [`TECHNOLOGIES.md`](TECHNOLOGIES.md) for the version/tooling matrix.
