@@ -1,6 +1,7 @@
 using System.Text.Json;
 using WorkLens.Core.Entities;
 using WorkLens.Infrastructure.Services;
+using Xunit;
 
 namespace WorkLens.Infrastructure.Tests;
 
