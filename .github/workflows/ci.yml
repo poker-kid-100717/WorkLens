@@ -81,17 +81,8 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Regenerate lockfile and install
-        run: |
-          rm -f package-lock.json
-          npm install
-
-      - name: Upload regenerated lockfile
-        uses: actions/upload-artifact@v4
-        with:
-          name: angular-20-package-lock
-          path: frontend/package-lock.json
-          if-no-files-found: error
+      - name: Install pinned dependencies
+        run: npm install --package-lock=false
 
       - name: Build (production)
         run: npm run build
@@ -100,7 +91,7 @@ jobs:
         run: npm test
 
       - name: Dependency audit
-        run: npm audit --audit-level=critical
+        run: npm audit --package-lock-only --audit-level=critical
 
   extension:
     name: Browser extension
