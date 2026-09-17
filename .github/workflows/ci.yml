@@ -80,11 +80,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
 
-      - name: Install and update dependencies
-        run: npm install
+      - name: Regenerate lockfile and install
+        run: |
+          rm -f package-lock.json
+          npm install
 
       - name: Upload regenerated lockfile
         uses: actions/upload-artifact@v4
