@@ -1,16 +1,5 @@
 name: CI
 
-# Build and validate every piece of the WorkLens project on every push/PR:
-# - .NET API/Core/Infrastructure solution (build, format check, EF migration
-#   sanity check against a real SQL Server service container)
-# - Angular frontend (build, unit tests headless)
-# - Browser extension (manifest + JS syntax validation)
-# - docker-compose.yml (config validation)
-# - Portfolio site (basic HTML validation)
-#
-# There is no deploy step here on purpose — this is a self-hosted, on-prem app,
-# so shipping to any environment is a manual step you run yourself (see README).
-
 on:
   push:
     branches: [main]
@@ -58,14 +47,16 @@ jobs:
       - name: Verify code formatting
         run: dotnet format WorkLens.slnx --verify-no-changes --severity error
 
-      - name: Install dotnet-ef
-        run: dotnet tool install --global dotnet-ef --version 9.0.0
+      - name: Test
+        run: dotnet test WorkLens.slnx --configuration Release --no-build --verbosity normal
 
-      - name: Apply EF Core migrations against a real SQL Server instance
-        # Exercises every migration end-to-end (schema creation, indexes, FKs) against
-        # the same engine used in production, not just "does it compile".
+      - name: Install dotnet-ef
+        run: dotnet tool install --global dotnet-ef --version 10.0.11
+
+      - name: Apply EF Core migrations against SQL Server
         env:
           ConnectionStrings__WorkLensDb: 'Server=localhost,1433;Database=WorkLensDb_CI;User Id=sa;Password=Ci_Build_Passw0rd!;TrustServerCertificate=True;'
+          Database__AutoMigrate: 'false'
         run: |
           export PATH="$PATH:$HOME/.dotnet/tools"
           dotnet ef database update \
@@ -101,12 +92,8 @@ jobs:
       - name: Unit tests (headless Chrome)
         run: npx ng test --no-watch --no-progress --browsers=ChromeHeadless
 
-      - name: Dependency audit (informational only)
-        # Known Angular 18 advisories exist as of this writing (see README's "A note on
-        # dependency security") — fixing them means a breaking major-version bump the
-        # project intentionally leaves as a manual decision. Report findings without
-        # failing the build.
-        run: npm audit --audit-level=critical || true
+      - name: Dependency audit
+        run: npm audit --audit-level=critical
 
   extension:
     name: Browser extension
@@ -123,10 +110,10 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Validate manifest.json is well-formed
+      - name: Validate manifest
         run: node -e "JSON.parse(require('fs').readFileSync('manifest.json', 'utf8')); console.log('manifest.json OK')"
 
-      - name: Check every JS file referenced by the manifest exists
+      - name: Check manifest-referenced JavaScript files
         run: |
           node -e "
             const fs = require('fs');
@@ -145,7 +132,7 @@ jobs:
             console.log('All manifest-referenced files exist:', [...referenced].join(', '));
           "
 
-      - name: Syntax-check every JS file
+      - name: Syntax-check JavaScript
         run: |
           for f in *.js; do
             echo "Checking $f"
@@ -153,7 +140,7 @@ jobs:
           done
 
   docker-compose:
-    name: docker-compose validation
+    name: Docker Compose validation
     runs-on: ubuntu-latest
     env:
       SQL_SA_PASSWORD: 'Ci_Build_Passw0rd!'
@@ -161,10 +148,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate docker-compose.yml
+      - name: Validate compose configuration
         run: docker compose config --quiet
 
-      - name: Build backend image
+      - name: Build API image
         run: docker compose build api
 
       - name: Build frontend image
@@ -188,7 +175,7 @@ jobs:
       - name: Validate HTML
         run: npx --yes html-validate index.html
 
-      - name: Check for broken relative asset links
+      - name: Check relative asset links
         run: |
           node -e "
             const fs = require('fs');
