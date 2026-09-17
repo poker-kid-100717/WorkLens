@@ -4,4 +4,7 @@
     <Project Path="src/WorkLens.Core/WorkLens.Core.csproj" />
     <Project Path="src/WorkLens.Infrastructure/WorkLens.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/WorkLens.Infrastructure.Tests/WorkLens.Infrastructure.Tests.csproj" />
+  </Folder>
 </Solution>
