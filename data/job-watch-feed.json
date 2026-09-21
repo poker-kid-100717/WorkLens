@@ -1,6 +1,33 @@
 {
-  "updatedAt": "2026-09-02T21:07:33Z",
+  "updatedAt": "2026-09-21T15:21:00Z",
   "jobs": [
+    {
+      "id": "onestream-senior-software-engineer-ii",
+      "title": "Senior Software Engineer II",
+      "company": "OneStream Software",
+      "location": "Remote - United States",
+      "isRemote": true,
+      "salaryMin": 151000,
+      "salaryMax": 196000,
+      "salaryCurrency": "USD",
+      "url": "https://www.dice.com/job-detail/5f992728-533c-42c6-b2e2-2d4070f1eb89",
+      "whyFit": "Career Pilot baseline 85/100. Strong hands-on IC match across C#/.NET, Azure, React/Angular/JavaScript, REST APIs, SQL performance, software architecture/system design, CI/CD/deployment automation, code reviews, and mentoring. Fully remote in the U.S. with no stated direct-report, hiring, org-building, or player-coach mandate.",
+      "foundAt": "2026-09-21T15:21:00Z",
+      "tags": [
+        ".NET",
+        "C#",
+        "Azure",
+        "React",
+        "Angular",
+        "REST APIs",
+        "SQL",
+        "architecture",
+        "mentoring",
+        "senior IC",
+        "$140k+ watch",
+        "$160k+ watch"
+      ]
+    },
     {
       "id": "draftkings-jr14836",
       "title": "Senior Lead Software Engineer, Backend",
