@@ -49,7 +49,7 @@ document generation (`app.MapOpenApi()`), exposed at `/openapi/v1.json`.
 
 | Tool | Version | Why |
 | --- | --- | --- |
-| **Node.js** | 24.x (22.22+ also works) | Runs the Angular CLI and build tooling |
+| **Node.js** | 24.15+ (22.22.3+ also works) | Runs the Angular CLI and build tooling |
 | **npm** | bundled with Node 24 | Installs `frontend/package.json` dependencies |
 | **Angular CLI** | 22.2.x (`@angular/cli`, invoked via `npx ng`) | Build/serve/test commands |
 

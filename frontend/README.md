@@ -10,4 +10,4 @@ running the API and the whole stack.
 | `npm test` | Unit tests with Vitest (`ng test`) |
 | `npm run build` | Production build into `dist/frontend/browser` |
 
-Requires Node 22.22+ or 24+.
+Requires Node 22.22.3+ or 24.15+ (see `engines` in `package.json`).

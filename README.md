@@ -140,7 +140,7 @@ dotnet tool install --global dotnet-ef
 dotnet ef database update --project src/WorkLens.Infrastructure --startup-project src/WorkLens.Api
 ```
 
-**Frontend** (requires Node 22.22+ or 24+):
+**Frontend** (requires Node 22.22.3+ or 24.15+):
 ```bash
 cd frontend
 npm install
