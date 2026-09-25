@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ResumeService } from '../../core/services/resume.service';
@@ -6,11 +6,11 @@ import { PdfTextExtractor } from '../../core/services/pdf-text-extractor';
 import { Resume } from '../../core/models/models';
 
 @Component({
-  selector: 'app-resume',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './resume.component.html',
-  styleUrl: './resume.component.scss'
+    selector: 'app-resume',
+    imports: [CommonModule, FormsModule],
+    templateUrl: './resume.component.html',
+    changeDetection: ChangeDetectionStrategy.Eager,
+    styleUrl: './resume.component.scss'
 })
 export class ResumeComponent implements OnInit {
   resumes: Resume[] = [];

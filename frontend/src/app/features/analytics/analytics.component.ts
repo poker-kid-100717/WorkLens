@@ -1,14 +1,14 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { AnalyticsSummary } from '../../core/models/models';
 
 @Component({
-  selector: 'app-analytics',
-  standalone: true,
-  imports: [CommonModule],
-  templateUrl: './analytics.component.html',
-  styleUrl: './analytics.component.scss'
+    selector: 'app-analytics',
+    imports: [],
+    templateUrl: './analytics.component.html',
+    changeDetection: ChangeDetectionStrategy.Eager,
+    styleUrl: './analytics.component.scss'
 })
 export class AnalyticsComponent implements OnInit {
   summary: AnalyticsSummary | null = null;

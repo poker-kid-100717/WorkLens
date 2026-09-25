@@ -1,15 +1,15 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 import { ApplicationsService } from '../../core/services/applications.service';
 import { APPLICATION_STATUSES, ApplicationStatus, CreateApplicationRequest, JobApplication } from '../../core/models/models';
 
 @Component({
-  selector: 'app-tracker',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './tracker.component.html',
-  styleUrl: './tracker.component.scss'
+    selector: 'app-tracker',
+    imports: [FormsModule],
+    templateUrl: './tracker.component.html',
+    changeDetection: ChangeDetectionStrategy.Eager,
+    styleUrl: './tracker.component.scss'
 })
 export class TrackerComponent implements OnInit {
   readonly statuses = APPLICATION_STATUSES;

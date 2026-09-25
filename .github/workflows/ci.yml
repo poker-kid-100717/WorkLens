@@ -20,7 +20,7 @@ on:
 
 env:
   DOTNET_VERSION: '10.0.x'
-  NODE_VERSION: '20.x'
+  NODE_VERSION: '24.x'
 
 jobs:
   backend:
@@ -59,7 +59,7 @@ jobs:
         run: dotnet format WorkLens.slnx --verify-no-changes --severity error
 
       - name: Install dotnet-ef
-        run: dotnet tool install --global dotnet-ef --version 9.0.0
+        run: dotnet tool install --global dotnet-ef --version 10.0.12
 
       - name: Apply EF Core migrations against a real SQL Server instance
         # Exercises every migration end-to-end (schema creation, indexes, FKs) against
@@ -98,15 +98,12 @@ jobs:
       - name: Build (production)
         run: npx ng build --configuration production
 
-      - name: Unit tests (headless Chrome)
-        run: npx ng test --no-watch --no-progress --browsers=ChromeHeadless
+      - name: Unit tests (Vitest)
+        run: npx ng test --watch=false
 
-      - name: Dependency audit (informational only)
-        # Known Angular 18 advisories exist as of this writing (see README's "A note on
-        # dependency security") — fixing them means a breaking major-version bump the
-        # project intentionally leaves as a manual decision. Report findings without
-        # failing the build.
-        run: npm audit --audit-level=critical || true
+      - name: Dependency audit
+        # Fails the build on any high or critical advisory in the dependency tree.
+        run: npm audit --audit-level=high
 
   extension:
     name: Browser extension

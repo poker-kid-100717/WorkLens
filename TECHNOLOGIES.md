@@ -34,7 +34,7 @@ Needed if you're editing code, not just running the prebuilt containers.
 | Tool | Version | Why |
 | --- | --- | --- |
 | **.NET SDK** | 10.0.x | Builds `WorkLens.Api`, `.Core`, `.Infrastructure`; this project targets `net10.0` in every `.csproj` |
-| **dotnet-ef** (CLI tool) | 9.0.0 | Generates/applies EF Core migrations (`dotnet tool install --global dotnet-ef --version 9.0.0`) |
+| **dotnet-ef** (CLI tool) | 10.0.12 | Generates/applies EF Core migrations (`dotnet tool install --global dotnet-ef --version 10.0.12`) |
 | **SQL Server** (any edition, or the Docker container) | 2019+ | Local dev target for the connection string in `appsettings.Development.json` |
 
 Key NuGet packages already referenced (installed automatically via `dotnet restore`,
@@ -49,13 +49,13 @@ document generation (`app.MapOpenApi()`), exposed at `/openapi/v1.json`.
 
 | Tool | Version | Why |
 | --- | --- | --- |
-| **Node.js** | 20.x | Runs the Angular CLI and build tooling |
-| **npm** | bundled with Node 20 | Installs `frontend/package.json` dependencies |
-| **Angular CLI** | 18.2.x (`@angular/cli`, invoked via `npx ng`) | Build/serve/test commands |
+| **Node.js** | 24.15+ (22.22.3+ also works) | Runs the Angular CLI and build tooling |
+| **npm** | bundled with Node 24 | Installs `frontend/package.json` dependencies |
+| **Angular CLI** | 22.2.x (`@angular/cli`, invoked via `npx ng`) | Build/serve/test commands |
 
-Key packages: `@angular/*` 18.2.x, `rxjs` 7.8, `pdfjs-dist` 4.10.38 (patched version —
-see the security note below), `wouter`-free routing (uses Angular's own `@angular/router`
-with hash-free paths since this isn't sandboxed like the website-builder templates).
+Key packages: `@angular/*` 22.2.x, `rxjs` 7.8, `pdfjs-dist` 4.10.38 (patched version —
+see the README's dependency security note), and Angular's own `@angular/router` with
+lazy-loaded feature routes. Unit tests run on Vitest through `ng test`.
 
 ### Browser extension
 
@@ -100,10 +100,10 @@ fully on-prem, self-contained stack per your original request.
 | Component | Version | Pinned in |
 | --- | --- | --- |
 | .NET target framework | `net10.0` | Every `.csproj` |
-| EF Core | 9.0.0 | `WorkLens.Infrastructure.csproj` |
+| EF Core | 10.0.12 | `WorkLens.Infrastructure.csproj` |
 | SQL Server (container) | `2022-latest` | `docker-compose.yml` |
-| Angular | ^18.2.0 | `frontend/package.json` |
-| Node (CI + Docker build stage) | 20.x | `.github/workflows/ci.yml`, `frontend/Dockerfile` |
+| Angular | ^22.2.0 | `frontend/package.json` |
+| Node (CI + Docker build stage) | 24.x | `.github/workflows/ci.yml`, `frontend/Dockerfile` |
 | pdfjs-dist | ^4.10.38 | `frontend/package.json` (patched against [GHSA-wgrm-67xf-hhpq](https://github.com/advisories/GHSA-wgrm-67xf-hhpq)) |
 | nginx (frontend runtime image) | 1.27-alpine | `frontend/Dockerfile` |
 | OpenAI model (resume matching) | `gpt-4o-mini` (configurable) | `.env` → `OPENAI_MODEL` |

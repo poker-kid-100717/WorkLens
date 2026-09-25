@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 import { SearchProfilesService } from '../../core/services/search-profiles.service';
 import { SaveSearchProfileRequest, SearchProfile } from '../../core/models/models';
@@ -11,11 +11,11 @@ import { SaveSearchProfileRequest, SearchProfile } from '../../core/models/model
  * feeds directly from the browser.
  */
 @Component({
-  selector: 'app-search-profiles',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './search-profiles.component.html',
-  styleUrl: './search-profiles.component.scss'
+    selector: 'app-search-profiles',
+    imports: [FormsModule],
+    templateUrl: './search-profiles.component.html',
+    changeDetection: ChangeDetectionStrategy.Eager,
+    styleUrl: './search-profiles.component.scss'
 })
 export class SearchProfilesComponent implements OnInit {
   profiles: SearchProfile[] = [];

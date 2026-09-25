@@ -5,10 +5,12 @@
       <h1>Resume matching</h1>
       <p class="subtitle">Add the resume you want WorkLens to use when ranking opportunities.</p>
     </div>
-    <div class="status-pill" *ngIf="resumes.length > 0">
-      <span class="status-dot"></span>
-      Resume active
-    </div>
+    @if (resumes.length > 0) {
+      <div class="status-pill">
+        <span class="status-dot"></span>
+        Resume active
+      </div>
+    }
   </div>
 
   <div class="resume-grid">
@@ -29,7 +31,7 @@
           [(ngModel)]="name"
           placeholder="Senior Full Stack Engineer"
           data-testid="input-resume-name"
-        />
+          />
       </div>
 
       <div class="field">
@@ -62,11 +64,17 @@
           placeholder="Paste your resume text here…"
           data-testid="textarea-resume-text"
         ></textarea>
-        <span class="text-meta" *ngIf="pastedText">{{ pastedText.length | number }} characters ready</span>
+        @if (pastedText) {
+          <span class="text-meta">{{ pastedText.length | number }} characters ready</span>
+        }
       </div>
 
-      <div class="message error-message" *ngIf="error">{{ error }}</div>
-      <div class="message success-message" *ngIf="success">{{ success }}</div>
+      @if (error) {
+        <div class="message error-message">{{ error }}</div>
+      }
+      @if (success) {
+        <div class="message success-message">{{ success }}</div>
+      }
 
       <div class="card-actions">
         <span class="privacy-note">Only extracted text is saved for matching.</span>
@@ -88,17 +96,27 @@
           <h3>Resume history</h3>
           <span>{{ resumes.length }}</span>
         </div>
-        <div *ngIf="loading" class="empty-state">Loading resumes…</div>
-        <div class="resume-list" *ngIf="!loading">
-          <div class="resume-row" *ngFor="let r of resumes" [attr.data-testid]="'resume-row-' + r.id">
-            <div class="resume-row-main">
-              <span class="resume-name">{{ r.name }}</span>
-              <span class="resume-meta">{{ r.characterCount | number }} chars · {{ r.uploadedAt | date: 'MMM d, y' }}</span>
-            </div>
-            <span class="badge" *ngIf="r.isActive">Active</span>
+        @if (loading) {
+          <div class="empty-state">Loading resumes…</div>
+        }
+        @if (!loading) {
+          <div class="resume-list">
+            @for (r of resumes; track r) {
+              <div class="resume-row" [attr.data-testid]="'resume-row-' + r.id">
+                <div class="resume-row-main">
+                  <span class="resume-name">{{ r.name }}</span>
+                  <span class="resume-meta">{{ r.characterCount | number }} chars · {{ r.uploadedAt | date: 'MMM d, y' }}</span>
+                </div>
+                @if (r.isActive) {
+                  <span class="badge">Active</span>
+                }
+              </div>
+            }
+            @if (resumes.length === 0) {
+              <p class="empty-state" data-testid="text-no-resumes">No resumes saved yet.</p>
+            }
           </div>
-          <p *ngIf="resumes.length === 0" class="empty-state" data-testid="text-no-resumes">No resumes saved yet.</p>
-        </div>
+        }
       </div>
     </aside>
   </div>
