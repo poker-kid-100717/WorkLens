@@ -19,7 +19,7 @@
         [(ngModel)]="keywordsText"
         placeholder="c#, .net, angular, azure"
         data-testid="input-profile-keywords"
-      />
+        />
     </div>
     <div class="field">
       <label>Location filter (optional)</label>
@@ -33,35 +33,50 @@
       <button class="btn btn-primary" (click)="submit()" data-testid="button-submit-profile">
         {{ editingId ? 'Save changes' : 'Create profile' }}
       </button>
-      <button class="btn btn-sm" *ngIf="editingId" (click)="resetForm()" data-testid="button-cancel-edit">Cancel</button>
+      @if (editingId) {
+        <button class="btn btn-sm" (click)="resetForm()" data-testid="button-cancel-edit">Cancel</button>
+      }
     </div>
   </div>
 
-  <div *ngIf="loading" class="empty-state">Loading profiles…</div>
+  @if (loading) {
+    <div class="empty-state">Loading profiles…</div>
+  }
 
-  <div class="profile-list" *ngIf="!loading">
-    <div class="profile-card card" *ngFor="let profile of profiles" [attr.data-testid]="'profile-card-' + profile.id">
-      <div class="profile-info">
-        <h4>{{ profile.name }}</h4>
-        <div class="profile-tags">
-          <span class="tag-chip" *ngFor="let k of profile.keywords">{{ k }}</span>
+  @if (!loading) {
+    <div class="profile-list">
+      @for (profile of profiles; track profile) {
+        <div class="profile-card card" [attr.data-testid]="'profile-card-' + profile.id">
+          <div class="profile-info">
+            <h4>{{ profile.name }}</h4>
+            <div class="profile-tags">
+              @for (k of profile.keywords; track k) {
+                <span class="tag-chip">{{ k }}</span>
+              }
+            </div>
+            @if (profile.locationFilter) {
+              <p class="profile-meta">Location: {{ profile.locationFilter }}</p>
+            }
+            @if (profile.remoteOnly) {
+              <p class="profile-meta">Remote only</p>
+            }
+          </div>
+          <div class="profile-actions">
+            <button class="btn btn-sm" (click)="toggleActive(profile)" [attr.data-testid]="'button-toggle-' + profile.id">
+              {{ profile.isActive ? 'Active' : 'Paused' }}
+            </button>
+            <button class="btn btn-sm" (click)="edit(profile)" [attr.data-testid]="'button-edit-' + profile.id">Edit</button>
+            <button class="btn btn-sm delete-btn" (click)="delete(profile)" [attr.data-testid]="'button-delete-' + profile.id">
+              Delete
+            </button>
+          </div>
         </div>
-        <p class="profile-meta" *ngIf="profile.locationFilter">Location: {{ profile.locationFilter }}</p>
-        <p class="profile-meta" *ngIf="profile.remoteOnly">Remote only</p>
-      </div>
-      <div class="profile-actions">
-        <button class="btn btn-sm" (click)="toggleActive(profile)" [attr.data-testid]="'button-toggle-' + profile.id">
-          {{ profile.isActive ? 'Active' : 'Paused' }}
-        </button>
-        <button class="btn btn-sm" (click)="edit(profile)" [attr.data-testid]="'button-edit-' + profile.id">Edit</button>
-        <button class="btn btn-sm delete-btn" (click)="delete(profile)" [attr.data-testid]="'button-delete-' + profile.id">
-          Delete
-        </button>
-      </div>
+      }
+      @if (profiles.length === 0) {
+        <p class="empty-state" data-testid="text-no-profiles">
+          No search profiles yet. Create one above so the background refresh knows what to look for.
+        </p>
+      }
     </div>
-
-    <p *ngIf="profiles.length === 0" class="empty-state" data-testid="text-no-profiles">
-      No search profiles yet. Create one above so the background refresh knows what to look for.
-    </p>
-  </div>
+  }
 </div>

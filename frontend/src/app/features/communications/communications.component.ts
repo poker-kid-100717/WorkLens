@@ -1,15 +1,15 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { OutlookCommunication, OutlookConnectionStatus } from '../../core/models/models';
 import { OutlookService } from '../../core/services/outlook.service';
 
 @Component({
-  selector: 'app-communications',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './communications.component.html',
-  styleUrl: './communications.component.scss'
+    selector: 'app-communications',
+    imports: [CommonModule, FormsModule],
+    templateUrl: './communications.component.html',
+    changeDetection: ChangeDetectionStrategy.Eager,
+    styleUrl: './communications.component.scss'
 })
 export class CommunicationsComponent implements OnInit {
   status: OutlookConnectionStatus | null = null;

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -9,11 +9,11 @@ import { ResumeService } from '../../core/services/resume.service';
 import { FeedResponse, JobListing, JobMatch } from '../../core/models/models';
 
 @Component({
-  selector: 'app-feed',
-  standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
-  templateUrl: './feed.component.html',
-  styleUrl: './feed.component.scss'
+    selector: 'app-feed',
+    imports: [CommonModule, FormsModule, RouterLink],
+    templateUrl: './feed.component.html',
+    changeDetection: ChangeDetectionStrategy.Eager,
+    styleUrl: './feed.component.scss'
 })
 export class FeedComponent implements OnInit, OnDestroy {
   readonly Math = Math;

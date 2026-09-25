@@ -1,7 +1,7 @@
 # WorkLens
 
 A self-hosted job feed and application tracker. Built for on-prem deployment: ASP.NET
-Core 10 API + SQL Server backend, Angular 18 frontend, all wired together with Docker
+Core 10 API + SQL Server backend, Angular 22 frontend, all wired together with Docker
 Compose. No dummy/sample data ships with the app — the database starts empty and the
 feed is only ever populated from the live sources below.
 
@@ -57,7 +57,7 @@ WorkLens/
 │   └── WorkLens.Infrastructure/   EF Core DbContext + migrations, repositories,
 │                                     feed providers (RemoteOK/Remotive/Greenhouse/Dice),
 │                                     background refresh service
-├── frontend/                        Angular 18 app (feed, tracker, analytics, search profiles)
+├── frontend/                        Angular 22 app (feed, tracker, analytics, search profiles)
 │   ├── nginx.conf                   Serves the built app + proxies /api to the backend
 │   └── Dockerfile
 ├── docker-compose.yml                SQL Server + API + Angular/nginx, wired together
@@ -140,7 +140,7 @@ dotnet tool install --global dotnet-ef
 dotnet ef database update --project src/WorkLens.Infrastructure --startup-project src/WorkLens.Api
 ```
 
-**Frontend** (requires Node 20+):
+**Frontend** (requires Node 22.22+ or 24+):
 ```bash
 cd frontend
 npm install
@@ -244,13 +244,9 @@ pull changes onto your server, not to push anything automatically.
 
 ## A note on dependency security
 
-Running `npm audit` in `frontend/` will currently flag a batch of Angular 18
-framework/build-tooling advisories disclosed after this project was scaffolded (XSS
-and cache-poisoning issues in `@angular/core`/`common`/`compiler` and their build
-tooling). Fixing them requires a major-version bump (Angular 18 → 21+), which is a
-breaking change I didn't want to push through untested on your behalf. Before treating
-this as production-hardened, run `npm audit` yourself and decide whether to upgrade or
-accept the risk for a single-user, on-prem tool.
+The frontend is on Angular 22, and `npm audit` reports no known advisories. CI runs
+`npm audit --audit-level=high` on every push and pull request, so a newly disclosed
+high or critical advisory fails the build instead of going unnoticed.
 
 `pdfjs-dist` (used for client-side resume PDF text extraction) is pinned to 4.10.38,
 which is patched against the known arbitrary-JS-execution advisory in earlier 4.x
