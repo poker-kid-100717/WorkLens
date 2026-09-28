@@ -1,4 +1,11 @@
 <div class="shell">
+  @if (isDemo) {
+    <div class="demo-banner" role="status" data-testid="banner-demo">
+      <strong>Public demo.</strong>
+      The job feed is live; tracker data is fictional and read-only, so changes won't save.
+      Outlook sync and resume matching are turned off.
+    </div>
+  }
   <header class="topbar">
     <div class="brand">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-label="WorkLens logo">

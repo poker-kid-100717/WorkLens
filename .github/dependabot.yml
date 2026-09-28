@@ -12,6 +12,9 @@ updates:
     groups:
       frontend:
         patterns: ["*"]
+  - package-ecosystem: "npm"
+    directory: "/cloudflare"
+    schedule: { interval: "weekly" }
   - package-ecosystem: "nuget"
     directory: "/"
     schedule: { interval: "weekly" }

@@ -8,8 +8,10 @@ name: CI
 # - docker-compose.yml (config validation)
 # - Portfolio site (basic HTML validation)
 #
-# There is no deploy step here on purpose — this is a self-hosted, on-prem app,
-# so shipping to any environment is a manual step you run yourself (see README).
+# - Public demo hosting (Wrangler deploy dry-run of the Cloudflare Worker + Container)
+#
+# Personal use stays self-hosted/on-prem. The only thing deployed anywhere is the
+# read-only public demo, by deploy-cloudflare.yml (see README, "Public demo").
 
 on:
   push:
@@ -166,6 +168,23 @@ jobs:
 
       - name: Build frontend image
         run: docker compose build frontend
+
+  cloudflare-demo:
+    name: Public demo hosting (dry-run)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Wrangler deploy dry-run
+        run: bash scripts/cloudflare-deploy.sh
+        env:
+          VALIDATE_ONLY: 'true'
 
   portfolio-site:
     name: Portfolio site (static HTML)

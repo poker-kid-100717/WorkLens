@@ -1,4 +1,5 @@
 using WorkLens.Core.Interfaces;
+using WorkLens.Infrastructure.Demo;
 using WorkLens.Infrastructure.FeedProviders;
 using WorkLens.Infrastructure.Persistence;
 using WorkLens.Infrastructure.Repositories;
@@ -13,11 +14,24 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("WorkLensDb")
-            ?? throw new InvalidOperationException("Missing ConnectionStrings:WorkLensDb in configuration.");
+        services.Configure<DemoOptions>(configuration.GetSection(DemoOptions.Section));
+        var demo = configuration.GetSection(DemoOptions.Section).Get<DemoOptions>() ?? new DemoOptions();
 
-        services.AddDbContext<WorkLensDbContext>(options =>
-            options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure(5)));
+        if (demo.Enabled)
+        {
+            // Public demo: a throwaway SQLite file recreated and seeded on every start,
+            // so no database server is needed and nothing a visitor sees is personal data.
+            services.AddDbContext<WorkLensDbContext>(options =>
+                options.UseSqlite($"Data Source={demo.DatabasePath}"));
+        }
+        else
+        {
+            var connectionString = configuration.GetConnectionString("WorkLensDb")
+                ?? throw new InvalidOperationException("Missing ConnectionStrings:WorkLensDb in configuration.");
+
+            services.AddDbContext<WorkLensDbContext>(options =>
+                options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure(5)));
+        }
 
         services.AddScoped<IJobListingRepository, JobListingRepository>();
         services.AddScoped<IJobApplicationRepository, JobApplicationRepository>();
@@ -83,7 +97,8 @@ public static class DependencyInjection
         services.AddScoped<ResumeMatchOrchestrator>();
 
         services.AddHttpClient<OutlookCommunicationService>(c => c.Timeout = TimeSpan.FromSeconds(45));
-        services.AddHostedService<OutlookSyncBackgroundService>();
+        if (!demo.Enabled)
+            services.AddHostedService<OutlookSyncBackgroundService>();
 
         return services;
     }

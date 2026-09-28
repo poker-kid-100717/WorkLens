@@ -1,4 +1,5 @@
 using WorkLens.Infrastructure;
+using WorkLens.Infrastructure.Demo;
 using WorkLens.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -25,15 +26,56 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
+var demoEnabled = builder.Configuration.GetValue("Demo:Enabled", false);
+
+if (demoEnabled)
+{
+    // Public read-only demo: rebuild the throwaway SQLite database from the model (the
+    // migrations are SQL Server-specific) and seed fictional tracker data on every start.
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<WorkLensDbContext>();
+    db.Database.EnsureDeleted();
+    db.Database.EnsureCreated();
+    await DemoSeeder.SeedAsync(db);
+}
 // Apply any pending EF Core migrations automatically on startup. Convenient for an
 // on-prem single-instance deployment; disable via appsettings if you prefer to run
 // `dotnet ef database update` manually as part of your release process.
-if (builder.Configuration.GetValue("Database:AutoMigrate", true))
+else if (builder.Configuration.GetValue("Database:AutoMigrate", true))
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<WorkLensDbContext>();
     db.Database.Migrate();
 }
+
+if (demoEnabled)
+{
+    // Every visitor shares the same data, so the demo is read-only: reject all writes, and
+    // the Outlook OAuth flow, before they reach a controller.
+    app.Use(async (context, next) =>
+    {
+        var path = context.Request.Path;
+        var isWrite = !(HttpMethods.IsGet(context.Request.Method)
+            || HttpMethods.IsHead(context.Request.Method)
+            || HttpMethods.IsOptions(context.Request.Method));
+        var isOutlookAuth = path.StartsWithSegments("/api/outlook/connect")
+            || path.StartsWithSegments("/api/outlook/callback");
+
+        if (path.StartsWithSegments("/api") && (isWrite || isOutlookAuth))
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            await context.Response.WriteAsJsonAsync(new
+            {
+                error = "This is a read-only public demo of WorkLens. Changes are disabled.",
+            });
+            return;
+        }
+
+        await next();
+    });
+}
+
+app.MapGet("/api/demo", () => Results.Ok(new { enabled = demoEnabled }));
 
 if (app.Environment.IsDevelopment() || builder.Configuration.GetValue("Swagger:Enabled", false))
 {
