@@ -71,3 +71,20 @@ services:
       - "8080:80"
     networks:
       - worklens-net
+
+  # Optional: private remote access through a Cloudflare Tunnel, protected by Cloudflare
+  # Access. Only starts with `docker compose --profile tunnel up -d`. The tunnel makes an
+  # outbound connection to Cloudflare, so no router ports are opened. Point the tunnel's
+  # public hostname at http://frontend:80 (see README, "Private remote access").
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: worklens-cloudflared
+    restart: unless-stopped
+    profiles: ["tunnel"]
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: "${CLOUDFLARE_TUNNEL_TOKEN:-}"
+    depends_on:
+      - frontend
+    networks:
+      - worklens-net

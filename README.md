@@ -125,6 +125,47 @@ docker compose down -v       # stop everything and wipe the database volume
 docker compose up -d --build # rebuild after code changes
 ```
 
+## Private remote access with Cloudflare Tunnel (optional, free)
+
+WorkLens has no login of its own and holds personal data, so never expose its ports
+directly. To reach it from anywhere, publish it through a
+[Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/)
+and put [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/)
+in front so only your email can sign in. Both are free on Cloudflare's Zero Trust
+Free plan, and everything, including SQL Server Express and your data, stays on this
+machine.
+
+```
+browser --> Cloudflare Access (email login) --> Cloudflare Tunnel --> cloudflared container
+                                                                        --> frontend (nginx) --> api --> sqlserver
+```
+
+The tunnel connects outbound from the `cloudflared` container, so no router ports are
+opened. The site is reachable only while this machine and Docker are running.
+
+1. In the Cloudflare dashboard open **Zero Trust** (pick a team name and the Free plan
+   the first time).
+2. **Networks > Tunnels > Create a tunnel**, type **Cloudflared**, name it `worklens`.
+   Copy the token from the install command (the long string after `--token`).
+3. Add a **public hostname**: a subdomain on a domain in your account, e.g.
+   `worklens.example.com`; service **HTTP**, URL **`frontend:80`**.
+4. **Access > Applications > Add an application > Self-hosted**: the same hostname,
+   and a policy with action **Allow** that includes **Emails** = your email.
+5. Recommended: back on the tunnel's public hostname, under **Additional application
+   settings > Access**, turn on **Protect with Access** and select that application, so
+   `cloudflared` itself rejects any request without a valid Access token.
+6. In `.env` set `CLOUDFLARE_TUNNEL_TOKEN=<token>`. If you use Outlook sync, also set
+   `OUTLOOK_REDIRECT_URI` and `OUTLOOK_FRONTEND_REDIRECT_URI` to the `https://` hostname
+   (see `.env.example`) and register that callback on the Entra app.
+7. Start everything including the tunnel:
+   ```bash
+   docker compose --profile tunnel up -d --build
+   ```
+
+`docker compose up -d` without the profile runs WorkLens locally with no tunnel, exactly
+as before. The browser extension works remotely only while you have an Access session
+for the hostname.
+
 ## Running it without Docker (local development)
 
 **Backend** (requires .NET 10 SDK and a reachable SQL Server instance):
@@ -239,7 +280,7 @@ manually) with five independent jobs:
 
 There's no deploy job — this is a self-hosted, on-prem app, so shipping anywhere is a
 deliberate manual step you run yourself (`docker compose up -d --build`, per
-"Running it on-prem" above). CI's job is to catch break-the-build issues before you
+"Running it on-prem" above; add `--profile tunnel` for private remote access). CI's job is to catch break-the-build issues before you
 pull changes onto your server, not to push anything automatically.
 
 ## A note on dependency security

@@ -10,6 +10,7 @@ name: CI
 #
 # There is no deploy step here on purpose — this is a self-hosted, on-prem app,
 # so shipping to any environment is a manual step you run yourself (see README).
+# Remote access, when wanted, goes through the optional Cloudflare Tunnel profile.
 
 on:
   push:
@@ -160,6 +161,11 @@ jobs:
 
       - name: Validate docker-compose.yml
         run: docker compose config --quiet
+
+      - name: Validate the optional Cloudflare Tunnel profile
+        env:
+          CLOUDFLARE_TUNNEL_TOKEN: ci-placeholder
+        run: docker compose --profile tunnel config --quiet
 
       - name: Build backend image
         run: docker compose build api
