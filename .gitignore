@@ -16,3 +16,8 @@ frontend/.angular/
 .vs/
 .vscode/
 *.swp
+
+# Cloudflare demo deployment (generated config and Worker dependencies)
+cloudflare/node_modules/
+cloudflare/package-lock.json
+cloudflare/wrangler.generated.jsonc

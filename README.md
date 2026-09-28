@@ -125,6 +125,39 @@ docker compose down -v       # stop everything and wipe the database volume
 docker compose up -d --build # rebuild after code changes
 ```
 
+## Public demo
+
+A read-only public demo runs on Cloudflare so anyone can try WorkLens without an
+account. It is the same API and Angular app, started with `Demo:Enabled=true`:
+
+- **Database:** a throwaway SQLite file created from the EF Core model and seeded on
+  every start (`src/WorkLens.Infrastructure/Demo/DemoSeeder.cs`). No SQL Server is
+  needed and the demo costs nothing beyond the Cloudflare Workers plan.
+- **Data:** the job feed is live (real public listings from the sources below); the
+  tracker, analytics, and search profiles are fictional sample data.
+- **Read-only:** every visitor shares the same data, so the API rejects all writes with
+  `403`, and a banner in the UI says so.
+- **Integrations off:** Outlook sync and OpenAI resume matching are disabled; no
+  personal data or API keys are involved.
+
+```
+browser --> Worker (APP_HOST or worklens-demo.<account>.workers.dev)
+              |-- Angular assets (edge)
+              '-- /api/* --> .NET API in a Cloudflare Container (Demo mode, SQLite)
+```
+
+Deployment runs from `.github/workflows/deploy-cloudflare.yml` on every push to `main`
+and smoke-tests the result, including that writes are rejected. It needs repository
+secrets `CLOUDFLARE_API_TOKEN` (Workers Scripts + Containers edit, plus the zone if you
+use a custom domain) and `CLOUDFLARE_ACCOUNT_ID`, and optionally an `APP_HOST`
+variable for a custom domain. Until the secrets exist the deploy job skips.
+
+Run the demo locally without SQL Server:
+
+```bash
+Demo__Enabled=true dotnet run --project src/WorkLens.Api
+```
+
 ## Running it without Docker (local development)
 
 **Backend** (requires .NET 10 SDK and a reachable SQL Server instance):
@@ -236,11 +269,12 @@ manually) with five independent jobs:
 | **extension** | Validates `manifest.json` is well-formed, every file it references exists, and every `.js` file parses |
 | **docker-compose** | `docker compose config` + builds the `api` and `frontend` images |
 | **portfolio-site** | HTML validation and a check for broken local asset references |
+| **cloudflare-demo** | Builds the Angular app and runs a Wrangler deploy dry-run of the public demo |
 
-There's no deploy job — this is a self-hosted, on-prem app, so shipping anywhere is a
-deliberate manual step you run yourself (`docker compose up -d --build`, per
-"Running it on-prem" above). CI's job is to catch break-the-build issues before you
-pull changes onto your server, not to push anything automatically.
+Your own copy is self-hosted, so shipping it is a deliberate manual step
+(`docker compose up -d --build`, per "Running it on-prem" above). The only automated
+deployment is the read-only public demo (see "Public demo"); CI dry-runs it on every
+push and pull request.
 
 ## A note on dependency security
 

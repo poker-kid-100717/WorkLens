@@ -156,3 +156,11 @@
     padding: var(--space-5) var(--space-4) var(--space-8);
   }
 }
+
+.demo-banner {
+  padding: var(--space-2) var(--space-6);
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 0.85rem;
+  text-align: center;
+}
