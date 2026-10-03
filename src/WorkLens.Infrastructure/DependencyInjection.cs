@@ -17,7 +17,13 @@ public static class DependencyInjection
         services.Configure<DemoOptions>(configuration.GetSection(DemoOptions.Section));
         var demo = configuration.GetSection(DemoOptions.Section).Get<DemoOptions>() ?? new DemoOptions();
 
-        if (demo.Enabled)
+        if (demo.Enabled && demo.UsesSqlServer)
+        {
+            // Public demo on a hosted SQL Server database (Demo:ConnectionString).
+            services.AddDbContext<WorkLensDbContext>(options =>
+                options.UseSqlServer(demo.ConnectionString, sql => sql.EnableRetryOnFailure(5)));
+        }
+        else if (demo.Enabled)
         {
             // Public demo: a throwaway SQLite file recreated and seeded on every start,
             // so no database server is needed and nothing a visitor sees is personal data.

@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using WorkLens.Core.Entities;
 using WorkLens.Core.Enums;
@@ -56,6 +57,16 @@ public static class DemoSeeder
             "Follow up with the recruiter this week.",
             [ApplicationStatus.Applied]),
     ];
+
+    /// <summary>Removes the fictional tracker data so <see cref="SeedAsync"/> can recreate it.</summary>
+    public static async Task ResetAsync(WorkLensDbContext db, CancellationToken ct = default)
+    {
+        await db.JobMatches.ExecuteDeleteAsync(ct);
+        await db.ApplicationStatusHistories.ExecuteDeleteAsync(ct);
+        await db.JobApplications.ExecuteDeleteAsync(ct);
+        await db.Resumes.ExecuteDeleteAsync(ct);
+        await db.SearchProfiles.ExecuteDeleteAsync(ct);
+    }
 
     public static async Task SeedAsync(WorkLensDbContext db, CancellationToken ct = default)
     {

@@ -130,9 +130,11 @@ docker compose up -d --build # rebuild after code changes
 A read-only public demo runs on Cloudflare so anyone can try WorkLens without an
 account. It is the same API and Angular app, started with `Demo:Enabled=true`:
 
-- **Database:** a throwaway SQLite file created from the EF Core model and seeded on
-  every start (`src/WorkLens.Infrastructure/Demo/DemoSeeder.cs`). No SQL Server is
-  needed and the demo costs nothing beyond the Cloudflare Workers plan.
+- **Database:** SQL Server when the `DATABASE_URL` secret is set (for example Azure SQL
+  Database's free offer): migrations are applied and the fictional tracker data is reseeded
+  on every start (`src/WorkLens.Infrastructure/Demo/DemoSeeder.cs`). Without it, a
+  throwaway SQLite file is created from the EF Core model instead, so no database server
+  is needed at all.
 - **Data:** the job feed is live (real public listings from the sources below); the
   tracker, analytics, and search profiles are fictional sample data.
 - **Read-only:** every visitor shares the same data, so the API rejects all writes with
@@ -143,14 +145,16 @@ account. It is the same API and Angular app, started with `Demo:Enabled=true`:
 ```
 browser --> Worker (APP_HOST or worklens-demo.<account>.workers.dev)
               |-- Angular assets (edge)
-              '-- /api/* --> .NET API in a Cloudflare Container (Demo mode, SQLite)
+              '-- /api/* --> .NET API in a Cloudflare Container (Demo mode) --> SQL Server (or SQLite)
 ```
 
 Deployment runs from `.github/workflows/deploy-cloudflare.yml` on every push to `main`
 and smoke-tests the result, including that writes are rejected. It needs repository
 secrets `CLOUDFLARE_API_TOKEN` (Workers Scripts + Containers edit, plus the zone if you
-use a custom domain) and `CLOUDFLARE_ACCOUNT_ID`, and optionally an `APP_HOST`
-variable for a custom domain. Until the secrets exist the deploy job skips.
+use a custom domain) and `CLOUDFLARE_ACCOUNT_ID`, optionally `DATABASE_URL` (a SQL Server
+connection string, `Server=tcp:<server>.database.windows.net,1433;Database=WorkLens;User ID=...;Password=...;Encrypt=True`),
+and optionally an `APP_HOST` variable for a custom domain. Until the Cloudflare secrets
+exist the deploy job skips.
 
 Run the demo locally without SQL Server:
 

@@ -30,12 +30,22 @@ var demoEnabled = builder.Configuration.GetValue("Demo:Enabled", false);
 
 if (demoEnabled)
 {
-    // Public read-only demo: rebuild the throwaway SQLite database from the model (the
-    // migrations are SQL Server-specific) and seed fictional tracker data on every start.
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<WorkLensDbContext>();
-    db.Database.EnsureDeleted();
-    db.Database.EnsureCreated();
+    if (db.Database.IsSqlServer())
+    {
+        // Public read-only demo on hosted SQL Server: migrate, then replace the fictional
+        // tracker data so its relative dates stay current. Live job listings are kept.
+        db.Database.Migrate();
+        await DemoSeeder.ResetAsync(db);
+    }
+    else
+    {
+        // Public read-only demo: rebuild the throwaway SQLite database from the model (the
+        // migrations are SQL Server-specific) and seed fictional tracker data on every start.
+        db.Database.EnsureDeleted();
+        db.Database.EnsureCreated();
+    }
     await DemoSeeder.SeedAsync(db);
 }
 // Apply any pending EF Core migrations automatically on startup. Convenient for an

@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 # Deploys the read-only public WorkLens demo to Cloudflare: Angular assets + a Worker at
-# the edge, and the .NET API (Demo mode, throwaway SQLite) in a Cloudflare Container.
+# the edge, and the .NET API (Demo mode) in a Cloudflare Container.
 # Used by .github/workflows/deploy-cloudflare.yml; also runnable locally.
 #
 # Required (unless VALIDATE_ONLY=true): CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
 # Optional:
 #   APP_HOST        custom hostname (for example worklens.example.com); when empty the
 #                   demo is served from its workers.dev URL only
+#   DATABASE_URL    SQL Server connection string for the demo (for example Azure SQL Database:
+#                   Server=tcp:<server>.database.windows.net,1433;Database=WorkLens;User ID=...;Password=...;Encrypt=True).
+#                   When empty the demo runs on a throwaway SQLite file.
 #   VALIDATE_ONLY=true  build and run `wrangler deploy --dry-run` without contacting Cloudflare
 set -euo pipefail
 
@@ -38,15 +41,31 @@ if (process.env.APP_HOST) {
 fs.writeFileSync(output, JSON.stringify(config, null, 2) + "\n");
 NODE
 
+# Only secrets that are set are uploaded; the demo works without any of them.
+if [ -z "${DATABASE_URL:-}" ]; then
+  echo "::notice::DATABASE_URL is not set; the WorkLens demo will run on a throwaway SQLite database."
+fi
+SECRETS_ARGS=()
+SECRETS_FILE="$(mktemp)"
+trap 'rm -f "$SECRETS_FILE"' EXIT
+chmod 600 "$SECRETS_FILE"
+node > "$SECRETS_FILE" <<'NODE'
+const secrets = {};
+if (process.env.DATABASE_URL) secrets.DATABASE_URL = process.env.DATABASE_URL;
+process.stdout.write(JSON.stringify(secrets));
+NODE
+if [ "$(cat "$SECRETS_FILE")" != "{}" ]; then SECRETS_ARGS=(--secrets-file "$SECRETS_FILE"); fi
+
 cd "$CF"
 if [ "$VALIDATE_ONLY" = "true" ]; then
-  npx wrangler deploy --dry-run --outdir "${RUNNER_TEMP:-/tmp}/wrangler-dry-run" --config wrangler.generated.jsonc
+  npx wrangler deploy --dry-run --outdir "${RUNNER_TEMP:-/tmp}/wrangler-dry-run" \
+    --config wrangler.generated.jsonc "${SECRETS_ARGS[@]}"
   echo "Cloudflare dry-run passed."
   exit 0
 fi
 
 DEPLOY_LOG="$(mktemp)"
-npx wrangler deploy --config wrangler.generated.jsonc | tee "$DEPLOY_LOG"
+npx wrangler deploy --config wrangler.generated.jsonc "${SECRETS_ARGS[@]}" | tee "$DEPLOY_LOG"
 
 if [ -n "$APP_HOST" ]; then
   APP_URL="https://$APP_HOST"

@@ -77,6 +77,27 @@ jobs:
       - name: Publish API (smoke check)
         run: dotnet publish src/WorkLens.Api/WorkLens.Api.csproj --configuration Release --output /tmp/api-publish --no-restore
 
+      - name: Public demo on SQL Server (as hosted on Cloudflare with DATABASE_URL)
+        # Starts the demo twice against the same database: the second start must reset and
+        # reseed the fictional tracker data rather than duplicate it.
+        env:
+          Demo__Enabled: 'true'
+          Demo__ConnectionString: 'Server=localhost,1433;Database=WorkLensDemo_CI;User Id=sa;Password=Ci_Build_Passw0rd!;TrustServerCertificate=True;'
+          ASPNETCORE_URLS: 'http://127.0.0.1:8080'
+        run: |
+          for run in 1 2; do
+            dotnet /tmp/api-publish/WorkLens.Api.dll > "/tmp/demo-$run.log" 2>&1 &
+            pid=$!
+            for attempt in $(seq 1 30); do
+              curl --fail --silent http://127.0.0.1:8080/api/health | grep -q '"database":true' && break
+              sleep 2
+            done
+            count="$(curl --fail --silent http://127.0.0.1:8080/api/applications | python3 -c 'import sys,json; print(len(json.load(sys.stdin)))')"
+            kill "$pid"; wait "$pid" || true
+            echo "Run $run: $count demo applications"
+            if [ "$count" != "10" ]; then cat "/tmp/demo-$run.log"; exit 1; fi
+          done
+
   frontend:
     name: Frontend (Angular)
     runs-on: ubuntu-latest
@@ -185,6 +206,7 @@ jobs:
         run: bash scripts/cloudflare-deploy.sh
         env:
           VALIDATE_ONLY: 'true'
+          DATABASE_URL: 'Server=tcp:dry-run.database.windows.net,1433;Database=WorkLens;User ID=dry-run;Password=dry-run;Encrypt=True'
 
   portfolio-site:
     name: Portfolio site (static HTML)

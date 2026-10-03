@@ -51,3 +51,4 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           APP_HOST: ${{ inputs.host || vars.APP_HOST }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
